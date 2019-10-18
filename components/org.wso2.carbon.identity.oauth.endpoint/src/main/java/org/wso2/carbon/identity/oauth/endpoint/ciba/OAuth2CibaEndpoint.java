@@ -24,6 +24,7 @@ import org.apache.oltu.oauth2.as.response.OAuthASResponse;
 import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.apache.oltu.oauth2.common.message.OAuthResponse;
 import org.wso2.carbon.identity.oauth.ciba.common.CibaParams;
+import org.wso2.carbon.identity.oauth.ciba.dto.AuthResponseContextDTO;
 import org.wso2.carbon.identity.oauth.ciba.dto.CibaAuthRequestDTO;
 import org.wso2.carbon.identity.oauth.ciba.exceptions.ErrorCodes;
 import org.wso2.carbon.identity.oauth.common.exception.InvalidOAuthClientException;
@@ -69,19 +70,20 @@ public class OAuth2CibaEndpoint {
 
                 CibaAuthRequestDTO cibaAuthRequestDTO = new CibaAuthRequestDTO(); //new DTO to capture claims in request
 
+                AuthResponseContextDTO authResponseContextDTO = new AuthResponseContextDTO();
 
-                if (AuthRequestValidator.getInstance().isValidClient(authRequest, response, cibaAuthRequestDTO)) {
+                if (AuthRequestValidator.getInstance().isValidClient(authRequest, authResponseContextDTO, cibaAuthRequestDTO)) {
                     //check whether the client exists
 
-                    if (AuthRequestValidator.getInstance().isValidUser(authRequest, response, cibaAuthRequestDTO)) {
+                    if (AuthRequestValidator.getInstance().isValidUser(authRequest, authResponseContextDTO, cibaAuthRequestDTO)) {
                         //check whether the user exists
 
-                        if (AuthRequestValidator.getInstance().isValidUserCode(authRequest, response)) {
+                        if (AuthRequestValidator.getInstance().isValidUserCode(authRequest, authResponseContextDTO)) {
                             //extensible method to validate usercode if needed
 
 
                             if (AuthRequestValidator.getInstance().isValidAuthRequest
-                                    (authRequest, response, cibaAuthRequestDTO)) {
+                                    (authRequest, authResponseContextDTO, cibaAuthRequestDTO)) {
                                 //validate authentication request for existence of mandatory parameters and values
                                 try {
                                     return CibaAuthResponseHandler.getInstance().
@@ -96,7 +98,7 @@ public class OAuth2CibaEndpoint {
                             } else {
                                 try {
                                     return CibaAuthResponseHandler.getInstance().
-                                            createErrorResponse(authRequest, response);
+                                            createErrorResponse(authResponseContextDTO);
                                     //if invalid request - create a ciba error response
 
 
@@ -107,7 +109,7 @@ public class OAuth2CibaEndpoint {
                                 }
                             }
                         } else {
-                            OAuthResponse errorresponse = null;
+                        /*    OAuthResponse errorresponse = null;
 
                             errorresponse = OAuthASResponse
                                     .errorResponse(response.getStatus())
@@ -116,15 +118,16 @@ public class OAuth2CibaEndpoint {
                                     .buildJSONMessage();
 
                             Response.ResponseBuilder respBuilder = Response.status(response.getStatus());
-                            return respBuilder.entity(errorresponse.getBody()).build();
+                            return respBuilder.entity(errorresponse.getBody()).build();*/
+                            return  CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
                         }
                     } else {
-                        OAuthResponse errorresponse = null;
+                      /*  OAuthResponse errorresponse = null;
                         try {
                             errorresponse = OAuthASResponse
                                     .errorResponse(response.getStatus())
                                     .setError(ErrorCodes.UNAUTHORIZED_USER)
-                                    .setErrorDescription(ErrorCodes.SubErrorCodes.UNREGISTERED_USER)
+                                    .setErrorDescription(ErrorCodes.SubErrorCodes.UNKNOWN_USER)
                                     .buildJSONMessage();
 
                             Response.ResponseBuilder respBuilder = Response.status(response.getStatus());
@@ -134,16 +137,17 @@ public class OAuth2CibaEndpoint {
                             if (log.isDebugEnabled()) {
                                 log.debug("Error building errorResponse.", e);
                             }
-                        }
+                        }*/
 
+                   return    CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
                     }
                 } else {
-                    OAuthResponse errorresponse = null;
+                   /* OAuthResponse errorresponse = null;
                     try {
                         errorresponse = OAuthASResponse
                                 .errorResponse(response.getStatus())
                                 .setError(ErrorCodes.UNAUTHORIZED_CLIENT)
-                                .setErrorDescription("Invalid_client")
+                                .setErrorDescription(ErrorCodes.SubErrorCodes.UNKNOWN_CLIENT)
                                 .buildJSONMessage();
 
                         Response.ResponseBuilder respBuilder = Response.status(response.getStatus());
@@ -153,8 +157,11 @@ public class OAuth2CibaEndpoint {
                         if (log.isDebugEnabled()) {
                             log.debug("Error building errorResponse.", e);
                         }
-                    }
+                    }*/
+
+                    return CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
                 }
+
 
             } else {
                 if (log.isDebugEnabled()) {

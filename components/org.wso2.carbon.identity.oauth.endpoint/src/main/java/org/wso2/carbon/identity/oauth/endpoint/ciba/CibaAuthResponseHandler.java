@@ -27,6 +27,7 @@ import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.apache.oltu.oauth2.common.message.OAuthResponse;
 import org.wso2.carbon.identity.oauth.ciba.common.CibaParams;
 import org.wso2.carbon.identity.oauth.ciba.dao.CibAuthCodeMgtDAO;
+import org.wso2.carbon.identity.oauth.ciba.dto.AuthResponseContextDTO;
 import org.wso2.carbon.identity.oauth.ciba.dto.AuthzRequestDTO;
 import org.wso2.carbon.identity.oauth.ciba.dto.CibaAuthRequestDTO;
 import org.wso2.carbon.identity.oauth.ciba.exceptions.ErrorCodes;
@@ -192,48 +193,23 @@ public class CibaAuthResponseHandler  {
     }
 
 
-    /**
-     * This method create CIBA Authentication Error Response.
-     * @param authRequest CIBA Authentication Request
-     * @return response
-     * @throws ExecutionException,IOException
-     */
-    public Response createErrorResponse (String  authRequest,@Context HttpServletResponse response) {
-        OAuthResponse errorresponse = null;
-        Response.ResponseBuilder respBuilder = Response.status(HttpServletResponse.SC_BAD_REQUEST);
-        try {
-            errorresponse = OAuthASResponse
-                    .errorResponse(HttpServletResponse.SC_BAD_REQUEST)
-                    .setError(ErrorCodes.INVALID_REQUEST)
-                    .setErrorDescription("Missing required parameters")
-                    .buildJSONMessage();
-
-        } catch (OAuthSystemException e) {
-            if (log.isDebugEnabled()) {
-                log.debug("Error in building errorResponse for Authentication Request.");
-            }
-        }
-        log.info("Returning CIBA Error response.");
-        return respBuilder.entity(errorresponse.getBody()).build();
-    }
 
 
     /**
      * This method create CIBA Authentication Error Response.
-     * @param errorCodes CIBA Authentication error codes
-     * @param errorDecription CIBA Error description
+     * @param authResponseContextDTO CIBA AuthenticationResponse Context that accumilates error codes,error,description
      * @return response
      * @throws ExecutionException,IOException
      */
-    public Response createErrorResponse(@Context HttpServletResponse response,String errorCodes,String errorDecription)
+    public Response createErrorResponse(AuthResponseContextDTO authResponseContextDTO)
             throws OAuthSystemException {
         OAuthResponse errorresponse =  OAuthASResponse
-                .errorResponse(response.getStatus())
-                .setError(errorCodes)
-                .setErrorDescription(errorDecription)
+                .errorResponse(authResponseContextDTO.getErrorCode())
+                .setError(authResponseContextDTO.getError())
+                .setErrorDescription(authResponseContextDTO.getErrorDescription())
                 .buildJSONMessage();
 
-        Response.ResponseBuilder respBuilder = Response.status(response.getStatus());
+        Response.ResponseBuilder respBuilder = Response.status(authResponseContextDTO.getErrorCode());
         return respBuilder.entity(errorresponse.getBody()).build();
     }
 
