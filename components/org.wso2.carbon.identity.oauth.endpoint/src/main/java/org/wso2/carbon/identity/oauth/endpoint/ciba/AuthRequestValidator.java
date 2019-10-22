@@ -433,7 +433,7 @@ public class AuthRequestValidator {
         if (clientId == null) {
 
             if (log.isDebugEnabled()) {
-                log.debug("unauthorized : Missing issuer of the JWT.");
+                log.debug("Missing issuer of the JWT.");
             }
             authResponseContextDTO.setErrorCode(HttpServletResponse.SC_UNAUTHORIZED);
             authResponseContextDTO.setError(ErrorCodes.UNAUTHORIZED_CLIENT);
@@ -454,6 +454,10 @@ public class AuthRequestValidator {
                 authResponseContextDTO.setError(ErrorCodes.UNAUTHORIZED_CLIENT);
                 authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.UNKNOWN_CLIENT);
                 cibaAuthRequestDTO = null;
+
+                if (log.isDebugEnabled()) {
+                    log.debug("Aforementioned clientID is not available.");
+                }
                 return false;
             } else {
                     cibaAuthRequestDTO.setAudience(clientId);
@@ -463,6 +467,9 @@ public class AuthRequestValidator {
                 authResponseContextDTO.setErrorCode(HttpServletResponse.SC_UNAUTHORIZED);
                 authResponseContextDTO.setError(ErrorCodes.UNAUTHORIZED_CLIENT);
                 authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.UNKNOWN_CLIENT);
+                if (log.isDebugEnabled()) {
+                    log.debug("Aforementioned clientID is not available.");
+                }
                 return false;
             }
         }
@@ -504,7 +511,7 @@ public class AuthRequestValidator {
     public boolean isValidUserCode(String authRequest, AuthResponseContextDTO authResponseContextDTO) {
         return true;
         //no implementation for the moment.Modify if needed.
-        // TODO: 10/16/19 provide support for usercode-currently not at the moment 
+        // TODO: 10/16/19 provide support for usercode-Not on the first release.
     }
 
 
@@ -533,7 +540,7 @@ public class AuthRequestValidator {
                 && (String.valueOf(jo.get("id_token_hint")).equals("null"))) {
 
             if (log.isDebugEnabled()) {
-                log.debug("No Login_hint_token supported for current version of IS.");
+                log.debug("No Login_hint_token support for current version of IS.");
             }
             authResponseContextDTO.setErrorCode(HttpServletResponse.SC_BAD_REQUEST);
             authResponseContextDTO.setError(ErrorCodes.INVALID_REQUEST);
@@ -552,6 +559,9 @@ public class AuthRequestValidator {
                 authResponseContextDTO.setErrorCode(HttpServletResponse.SC_UNAUTHORIZED);
                 authResponseContextDTO.setError(ErrorCodes.UNAUTHORIZED_USER);
                 authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.UNKNOWN_USER);
+                if (log.isDebugEnabled()) {
+                    log.debug("Unknown user identity.");
+                }
                 validUser = false;
             }
 
@@ -569,6 +579,9 @@ public class AuthRequestValidator {
                 authResponseContextDTO.setErrorCode(HttpServletResponse.SC_UNAUTHORIZED);
                 authResponseContextDTO.setError(ErrorCodes.UNAUTHORIZED_USER);
                 authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.UNKNOWN_USER);
+                if (log.isDebugEnabled()) {
+                    log.debug("Unknown user identity.");
+                }
                 validUser = false;
             }
 
@@ -580,6 +593,9 @@ public class AuthRequestValidator {
             authResponseContextDTO.setErrorCode(HttpServletResponse.SC_UNAUTHORIZED);
             authResponseContextDTO.setError(ErrorCodes.UNAUTHORIZED_USER);
             authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.UNKNOWN_USER);
+            if (log.isDebugEnabled()) {
+                log.debug("Unknown user identity.");
+            }
             validUser = false;
 
         }
@@ -595,8 +611,10 @@ public class AuthRequestValidator {
     private boolean isUserExists(String login_hint,int tenantID) throws UserStoreException, RegistryException {
         //only username is supported as login_hint
 
-        // TODO: 10/15/19 check with db for user existence
-        log.info("Checked whether user exist in the store ");
+        if (log.isDebugEnabled()) {
+            log.info("Checked whether user exists in the store. ");
+        }
+
         return AuthReqIDManager.getInstance().isUserExists(tenantID, login_hint);
 
 
@@ -614,11 +632,18 @@ public class AuthRequestValidator {
 
         String issuer = claimsSet.getIssuer();
 
-        if(issuer == null || !issuer.equals(VALID_ID_TOKEN_ISSUER)){
+        if(issuer == null || !issuer.equals(VALID_ID_TOKEN_ISSUER)) {
+            if (log.isDebugEnabled()) {
+                log.info("Provided id_token used as a hint is not from a valid issuer. ");
+            }
+
             return false;
         } else {
 
             if (claimsSet.getSubject() == null) {
+                if (log.isDebugEnabled()) {
+                    log.info("Subject not availabale in the id_token_hint");
+                }
                 return false;
             } else {
                 return true;
@@ -633,11 +658,9 @@ public class AuthRequestValidator {
      * @return String- the user identity
      */
     private String getUserfromIDToken(String id_token_hint) throws ParseException {
-        // TODO: 10/15/19 check and return sub from ID token
         SignedJWT signedJWT = SignedJWT.parse(id_token_hint);
         JWTClaimsSet claimsSet = signedJWT.getJWTClaimsSet();
         String subject = claimsSet.getSubject();
-        log.info(subject);
         return subject;
     }
 
