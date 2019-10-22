@@ -51,13 +51,13 @@ public class OAuth2CibaEndpoint {
     @Path("/")
     @Consumes("application/x-www-form-urlencoded")
     @Produces("application/json")
-    public Response ciba(@Context HttpServletRequest request, @Context HttpServletResponse response) {
+    public Response ciba(@Context HttpServletRequest request, @Context HttpServletResponse response) throws IdentityOAuth2Exception {
 
         Map<String, String[]> attributeNames =  request.getParameterMap();
         //capture all parameters
 
 
-            log.info("CIBA request has hit Client Initiated Back-Channel Authentication EndPoint.");
+        log.info("CIBA request has hit Client Initiated Back-Channel Authentication EndPoint.");
 
         try {
             if (attributeNames.containsKey(CibaParams.REQUEST)) {
@@ -109,55 +109,16 @@ public class OAuth2CibaEndpoint {
                                 }
                             }
                         } else {
-                        /*    OAuthResponse errorresponse = null;
 
-                            errorresponse = OAuthASResponse
-                                    .errorResponse(response.getStatus())
-                                    .setError(ErrorCodes.UNAUTHORIZED_CLIENT)
-                                    .setErrorDescription("Invalid user_code.")
-                                    .buildJSONMessage();
-
-                            Response.ResponseBuilder respBuilder = Response.status(response.getStatus());
-                            return respBuilder.entity(errorresponse.getBody()).build();*/
                             return  CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
                         }
                     } else {
-                      /*  OAuthResponse errorresponse = null;
-                        try {
-                            errorresponse = OAuthASResponse
-                                    .errorResponse(response.getStatus())
-                                    .setError(ErrorCodes.UNAUTHORIZED_USER)
-                                    .setErrorDescription(ErrorCodes.SubErrorCodes.UNKNOWN_USER)
-                                    .buildJSONMessage();
 
-                            Response.ResponseBuilder respBuilder = Response.status(response.getStatus());
-                            return respBuilder.entity(errorresponse.getBody()).build();
-                        } catch (OAuthSystemException e) {
 
-                            if (log.isDebugEnabled()) {
-                                log.debug("Error building errorResponse.", e);
-                            }
-                        }*/
-
-                   return    CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
+                        return    CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
                     }
                 } else {
-                   /* OAuthResponse errorresponse = null;
-                    try {
-                        errorresponse = OAuthASResponse
-                                .errorResponse(response.getStatus())
-                                .setError(ErrorCodes.UNAUTHORIZED_CLIENT)
-                                .setErrorDescription(ErrorCodes.SubErrorCodes.UNKNOWN_CLIENT)
-                                .buildJSONMessage();
 
-                        Response.ResponseBuilder respBuilder = Response.status(response.getStatus());
-                        return respBuilder.entity(errorresponse.getBody()).build();
-                    } catch (OAuthSystemException e) {
-
-                        if (log.isDebugEnabled()) {
-                            log.debug("Error building errorResponse.", e);
-                        }
-                    }*/
 
                     return CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
                 }
@@ -174,7 +135,7 @@ public class OAuth2CibaEndpoint {
                 errorresponse = OAuthASResponse
                         .errorResponse(response.getStatus())
                         .setError(ErrorCodes.INVALID_REQUEST)
-                        .setErrorDescription("Missing 'request' parameter.")
+                        .setErrorDescription(ErrorCodes.SubErrorCodes.MISSING_PARAMETERS)
                         .buildJSONMessage();
 
 
@@ -190,6 +151,7 @@ public class OAuth2CibaEndpoint {
             if (log.isDebugEnabled()) {
                 log.debug(e);
             }
+            throw new IdentityOAuth2Exception(e.getMessage());
         } catch (OAuthSystemException e) {
             if (log.isDebugEnabled()) {
                 log.debug(e);

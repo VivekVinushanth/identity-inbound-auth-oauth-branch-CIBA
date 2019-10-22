@@ -414,7 +414,7 @@ public class AuthRequestValidator {
 
 
     /**
-     * This method cheks whether the client is valis
+`     * This method cheks whether the client is valid
      * @param request CIBA Authentication request
      * @return Boolean
      * @throws IdentityOAuth2Exception,InvalidOAuthClientException
@@ -464,7 +464,8 @@ public class AuthRequestValidator {
                 authResponseContextDTO.setError(ErrorCodes.UNAUTHORIZED_CLIENT);
                 authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.UNKNOWN_CLIENT);
                 return false;
-            }}
+            }
+        }
         }
 
 

@@ -136,7 +136,7 @@ public class CibaAuthResponseHandler  {
             //internal http authorize call to /authorize end point
             CibaAuthorizationHandler.getInstance().initiateAuthzRequest(authzRequestDTO);
 
-            log.info("Returning CIBA Authentication response.");
+            log.info("Returning CIBA Authentication Response.");
             return respBuilder.entity(cibaAuthResponse.getBody()).build();
 
         } catch (OAuthSystemException e) {
@@ -197,7 +197,7 @@ public class CibaAuthResponseHandler  {
 
     /**
      * This method create CIBA Authentication Error Response.
-     * @param authResponseContextDTO CIBA AuthenticationResponse Context that accumilates error codes,error,description
+     * @param authResponseContextDTO CIBA AuthenticationResponseContext that accumulates error codes,error,description
      * @return response
      * @throws ExecutionException,IOException
      */
