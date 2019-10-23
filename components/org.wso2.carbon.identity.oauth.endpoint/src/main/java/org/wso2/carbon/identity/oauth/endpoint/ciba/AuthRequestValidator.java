@@ -553,6 +553,7 @@ public class AuthRequestValidator {
                 && (String.valueOf(jo.get("id_token_hint")).equals("null"))) {
 
             if (this.isUserExists(String.valueOf(jo.get("login_hint")),tenantID)) {
+                //confirmed that user exists in the store and setting the user hint here
                 cibaAuthRequestDTO.setUserHint(String.valueOf(jo.get("login_hint")));
                 validUser = true;
             } else {
@@ -572,7 +573,7 @@ public class AuthRequestValidator {
                 && (String.valueOf(jo.get("login_hint")).equals("null"))
                 && (!String.valueOf(jo.get("id_token_hint")).equals("null"))) {
 
-            if (this.isSubjectExists(String.valueOf(jo.get("id_token_hint")))) {
+            if (this.isSubjectExists(String.valueOf(jo.get("id_token_hint")),tenantID)) {
                 cibaAuthRequestDTO.setUserHint(getUserfromIDToken(String.valueOf(jo.get("id_token_hint"))));
                 validUser = true;
             } else {
@@ -605,17 +606,17 @@ public class AuthRequestValidator {
 
     /**
      * Verify whether the mentioned user exists
-     * @param login_hint it carries user identity
+     * @param user_hint it carries user identity
      * @return boolean
      */
-    private boolean isUserExists(String login_hint,int tenantID) throws UserStoreException, RegistryException {
-        //only username is supported as login_hint
+    private boolean isUserExists(String user_hint,int tenantID) throws UserStoreException, RegistryException {
+        //only username is supported as user_hint
 
         if (log.isDebugEnabled()) {
             log.info("Checked whether user exists in the store. ");
         }
 
-        return AuthReqIDManager.getInstance().isUserExists(tenantID, login_hint);
+        return AuthReqIDManager.getInstance().isUserExists(tenantID,user_hint);
 
 
     }
@@ -625,12 +626,13 @@ public class AuthRequestValidator {
      * @param id_token_hint it carries user identity
      * @return boolean
      */
-    private boolean isSubjectExists(String id_token_hint) throws ParseException {
+    private boolean isSubjectExists(String id_token_hint,int tenantID) throws ParseException, UserStoreException, RegistryException {
         SignedJWT signedJWT = SignedJWT.parse(id_token_hint);
         JWTClaimsSet claimsSet = signedJWT.getJWTClaimsSet();
         //JSONObject jo = signedJWT.getJWTClaimsSet().toJSONObject();
 
         String issuer = claimsSet.getIssuer();
+
 
         if(issuer == null || !issuer.equals(VALID_ID_TOKEN_ISSUER)) {
             if (log.isDebugEnabled()) {
@@ -646,7 +648,11 @@ public class AuthRequestValidator {
                 }
                 return false;
             } else {
-                return true;
+                if (isUserExists(claimsSet.getSubject(), tenantID)) {
+                    return true;
+                }else {
+                    return false;
+                }
             }
         }
 
