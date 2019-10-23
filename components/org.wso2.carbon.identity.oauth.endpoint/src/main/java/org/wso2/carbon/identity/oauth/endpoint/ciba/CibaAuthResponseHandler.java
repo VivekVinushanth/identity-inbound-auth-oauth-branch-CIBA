@@ -234,12 +234,12 @@ public class CibaAuthResponseHandler  {
         }
 
         OAuthResponse errorresponse =  OAuthASResponse
-                .errorResponse(authResponseContextDTO.getErrorCode())
+                .errorResponse(authResponseContextDTO.getStatus())
                 .setError(authResponseContextDTO.getError())
                 .setErrorDescription(authResponseContextDTO.getErrorDescription())
                 .buildJSONMessage();
 
-        Response.ResponseBuilder respBuilder = Response.status(authResponseContextDTO.getErrorCode());
+        Response.ResponseBuilder respBuilder = Response.status(authResponseContextDTO.getStatus());
         return respBuilder.entity(errorresponse.getBody()).build();
     }
 
