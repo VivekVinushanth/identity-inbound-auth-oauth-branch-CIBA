@@ -32,18 +32,15 @@ import org.wso2.carbon.identity.oauth.ciba.util.AuthReqIDManager;
 import org.wso2.carbon.identity.oauth.common.exception.InvalidOAuthClientException;
 import org.wso2.carbon.identity.oauth.config.OAuthServerConfiguration;
 import org.wso2.carbon.identity.oauth.dao.OAuthAppDO;
-import org.wso2.carbon.identity.oauth.internal.OAuthComponentServiceHolder;
 import org.wso2.carbon.identity.oauth2.IdentityOAuth2Exception;
 import org.wso2.carbon.identity.oauth2.util.OAuth2Util;
 import org.wso2.carbon.registry.core.exceptions.RegistryException;
 import org.wso2.carbon.user.api.UserStoreException;
-import org.wso2.carbon.user.core.service.RealmService;
 
 import java.text.ParseException;
 import java.time.ZonedDateTime;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.Context;
 
 
 /**
@@ -530,10 +527,6 @@ public class AuthRequestValidator {
         JWTClaimsSet claimsSet = signedJWT.getJWTClaimsSet();
         JSONObject jo = signedJWT.getJWTClaimsSet().toJSONObject();
         String clientID = cibaAuthRequestDTO.getAudience();
-        OAuthAppDO appDO = OAuth2Util.getAppInformationByClientId(clientID);
-        String tenantDomain = OAuth2Util.getTenantDomainOfOauthApp(clientID);
-
-        int tenantID = OAuth2Util.getTenantId(tenantDomain);
 
         if (!(String.valueOf(jo.get("login_hint_token")).equals("null"))
                 && (String.valueOf(jo.get("login_hint")).equals("null"))
@@ -552,7 +545,7 @@ public class AuthRequestValidator {
                 && (!String.valueOf(jo.get("login_hint")).equals("null"))
                 && (String.valueOf(jo.get("id_token_hint")).equals("null"))) {
 
-            if (this.isUserExists(String.valueOf(jo.get("login_hint")),tenantID)) {
+            if (this.isUserExists(String.valueOf(jo.get("login_hint")))) {
                 //confirmed that user exists in the store and setting the user hint here
                 cibaAuthRequestDTO.setUserHint(String.valueOf(jo.get("login_hint")));
                 validUser = true;
@@ -573,9 +566,14 @@ public class AuthRequestValidator {
                 && (String.valueOf(jo.get("login_hint")).equals("null"))
                 && (!String.valueOf(jo.get("id_token_hint")).equals("null"))) {
 
-            if (this.isSubjectExists(String.valueOf(jo.get("id_token_hint")),tenantID)) {
-                cibaAuthRequestDTO.setUserHint(getUserfromIDToken(String.valueOf(jo.get("id_token_hint"))));
-                validUser = true;
+            if (OAuth2Util.validateIdToken(String.valueOf(jo.get("id_token_hint")))) {
+                //id token is valid.
+
+                if(this.isUserExists(String.valueOf(jo.get("id_token_hint")))) {
+                    //user exists in tenant
+                    cibaAuthRequestDTO.setUserHint(getUserfromIDToken(String.valueOf(jo.get("id_token_hint"))));
+                    validUser = true;
+
             } else {
                 authResponseContextDTO.setErrorCode(HttpServletResponse.SC_UNAUTHORIZED);
                 authResponseContextDTO.setError(ErrorCodes.UNAUTHORIZED_USER);
@@ -583,6 +581,15 @@ public class AuthRequestValidator {
                 if (log.isDebugEnabled()) {
                     log.debug("Unknown user identity.");
                 }
+                validUser = false;
+            }
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("Invalid id_token_hint");
+                }
+                authResponseContextDTO.setErrorCode(HttpServletResponse.SC_UNAUTHORIZED);
+                authResponseContextDTO.setError(ErrorCodes.UNAUTHORIZED_USER);
+                authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.INVALID_ID_TOKEN_HINT);
                 validUser = false;
             }
 
@@ -609,24 +616,30 @@ public class AuthRequestValidator {
      * @param user_hint it carries user identity
      * @return boolean
      */
-    private boolean isUserExists(String user_hint,int tenantID) throws UserStoreException, RegistryException {
+    private boolean isUserExists(String user_hint) throws UserStoreException, RegistryException, IdentityOAuth2Exception {
         //only username is supported as user_hint
 
         if (log.isDebugEnabled()) {
             log.info("Checked whether user exists in the store. ");
         }
+      String domain =  OAuth2Util.getUserStoreDomainFromUserId(user_hint);
+        log.info("domain of user :" +domain);
+
+        int tenantID = OAuth2Util.getTenantIdFromUserName(user_hint);
+
+        log.info("tenantID of user :" +tenantID);
 
         return AuthReqIDManager.getInstance().isUserExists(tenantID,user_hint);
 
 
     }
 
-    /**
+ /*   *//**
      * Verify whether the mentioned user exists and checks its a valid token from https://localhost:9443/oauth2/token endpoint
      * @param id_token_hint it carries user identity
      * @return boolean
-     */
-    private boolean isSubjectExists(String id_token_hint,int tenantID) throws ParseException, UserStoreException, RegistryException {
+     *//*
+    private boolean isValidIdTokenHint(String id_token_hint, int tenantID) throws ParseException, UserStoreException, RegistryException {
         SignedJWT signedJWT = SignedJWT.parse(id_token_hint);
         JWTClaimsSet claimsSet = signedJWT.getJWTClaimsSet();
         //JSONObject jo = signedJWT.getJWTClaimsSet().toJSONObject();
@@ -641,7 +654,7 @@ public class AuthRequestValidator {
 
             return false;
         } else {
-
+                OAuth2Util.validateIdToken(id_token_hint)
             if (claimsSet.getSubject() == null) {
                 if (log.isDebugEnabled()) {
                     log.info("Subject not availabale in the id_token_hint");
@@ -656,7 +669,7 @@ public class AuthRequestValidator {
             }
         }
 
-    }
+    }*/
 
     /**
      * Obtain sub from given id token
