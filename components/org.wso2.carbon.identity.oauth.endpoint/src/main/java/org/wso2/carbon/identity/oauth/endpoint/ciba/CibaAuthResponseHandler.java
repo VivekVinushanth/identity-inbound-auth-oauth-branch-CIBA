@@ -94,54 +94,79 @@ public class CibaAuthResponseHandler  {
     public Response createAuthResponse( @Context HttpServletRequest request, @Context HttpServletResponse response,
                                         CibaAuthRequestDTO cibaAuthRequestDTO) {
         try {
-            //create JWT as cibaauthcode response
-        JWT cibaAuthCodeasJWT = AuthReqIDManager.getInstance().getCibaAuthCode(cibaAuthRequestDTO);
 
-        //set the expirytime
-        long expiresIn = AuthReqIDManager.getInstance().getExpiresIn(cibaAuthRequestDTO);
+            //Create JWT as CibaAuthCode.
+            JWT cibaAuthCodeasJWT = AuthReqIDManager.getInstance().getCibaAuthCode(cibaAuthRequestDTO);
 
+            if(log.isDebugEnabled()) {
+                log.info("Creating CibaAuthCode as a JWT for the request made by client with clientID : " + cibaAuthRequestDTO.getAudience() + ".");
+            }
 
-        //serialize so that can be returned in preferable manner
-        String cibaAuthCode = cibaAuthCodeasJWT.serialize();
-        if (log.isDebugEnabled()) {
-            log.info("CIBA AuthReqID generated.");
-            log.info("CIBA AuthReqID :"+cibaAuthCode);
-        }
+            //Set the ExpiryTime.
+            long expiresIn = AuthReqIDManager.getInstance().getExpiresIn(cibaAuthRequestDTO);
+            if(log.isDebugEnabled()) {
+                log.info("Setting ExpiryTime for the response to the  request made by client with clientID : " + cibaAuthRequestDTO.getAudience() + ".");
+            }
 
-        //create authentication response
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.setContentType(MediaType.APPLICATION_JSON);
-        OAuthResponse.OAuthResponseBuilder cibaAuthResponsebuilder = OAuthResponse.
-                status(HttpServletResponse.SC_OK).setParam(CibaParams.AUTH_REQ_ID, cibaAuthCode).
-                setParam(CibaParams.EXPIRES_IN,String.valueOf(expiresIn)).setParam(CibaParams.INTERVAL, "2");
+            //Serialize so that can be returned in preferable manner.
+            String cibaAuthCode = cibaAuthCodeasJWT.serialize();
+            if (log.isDebugEnabled()) {
+                log.info("Ciba auth_req_id " + cibaAuthCode + " is created for the response to the request made by client with clientID : " + cibaAuthRequestDTO.getAudience() + ".");
+            }
 
+            //Create authentication response.
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.setContentType(MediaType.APPLICATION_JSON);
+            OAuthResponse.OAuthResponseBuilder cibaAuthResponsebuilder = OAuthResponse.
+                    status(HttpServletResponse.SC_OK).setParam(CibaParams.AUTH_REQ_ID, cibaAuthCode).
+                    setParam(CibaParams.EXPIRES_IN,String.valueOf(expiresIn)).setParam(CibaParams.INTERVAL, "2");
 
-        Response.ResponseBuilder respBuilder = Response.status(response.getStatus());
+            if (log.isDebugEnabled()) {
+                log.info("Creating CIBA Authentication response to the request made by client with clientID : " + cibaAuthRequestDTO.getAudience() + ".");
+            }
 
-        OAuthResponse cibaAuthResponse = null;
+            Response.ResponseBuilder respBuilder = Response.status(response.getStatus());
 
-            cibaAuthResponse = cibaAuthResponsebuilder.buildJSONMessage();
+            OAuthResponse cibaAuthResponse  = cibaAuthResponsebuilder.buildJSONMessage();
 
-            //build authCode with all the parameters that need to be persisted
+            //Build authCode with all the parameters that need to be persisted.
             CibaAuthCodeDO cibaAuthCodeDO = CibaAuthCodeDOBuilder.getInstance().buildCibaAuthCodeDO(cibaAuthCode);
             // TODO: 10/14/19 can add as a builder format-
 
-            //persist cibaAuthCode
-            CibAuthCodeMgtDAO.getInstance().persistCibaAuthReqCode(cibaAuthCodeDO);
+            if (log.isDebugEnabled()) {
+                log.info("Building CibaAuthCodeDO that accumulates parameters to be persisted in regard to the request made by client with clientID : " + cibaAuthRequestDTO.getAudience() + ".");
+            }
 
-            //build authorize request data transfer object
+
+            //Persist CibaAuthCode.
+            CibAuthCodeMgtDAO.getInstance().persistCibaAuthReqCode(cibaAuthCodeDO);
+            if (log.isDebugEnabled()) {
+                log.info("Persisting CibaAuthCodeDO that accumilates parameters to be persisted in regard to the request made by client with clientID : " + cibaAuthRequestDTO.getAudience() + ".");
+            }
+
+            //Build authorize request data transfer object.
             AuthzRequestDTO authzRequestDTO = AuthzRequestDOBuilder.getInstance().buildAuthzRequestDO(cibaAuthRequestDTO, cibaAuthCodeDO);
             // TODO: 10/14/19 can add as a builder format-
+            if (log.isDebugEnabled()) {
+                log.info("Build CibaAuthzRequestDTO using  CibaAuthCodeDo in regard to the request made by client with clientID : " + cibaAuthRequestDTO.getAudience() + ".");
+            }
 
-            //internal http authorize call to /authorize end point
+            //Internal http authorize call to /authorize end point.
             CibaAuthorizationHandler.getInstance().initiateAuthzRequest(authzRequestDTO);
+            if (log.isDebugEnabled()) {
+                log.info("Firing a Authorization request in regard to the request made by client with clientID : " + cibaAuthRequestDTO.getAudience() + ".");
+            }
 
-            log.info("Returning CIBA Authentication Response.");
+            log.info("Returning CIBA Authentication Response for the request made by client with clientID : " + cibaAuthRequestDTO.getAudience() + ".");
+
+            if(log.isDebugEnabled()) {
+                log.info("Returning CIBA Authentication Response for the request made by client with clientID : " + cibaAuthRequestDTO.getAudience() + ".");
+            }
             return respBuilder.entity(cibaAuthResponse.getBody()).build();
 
         } catch (OAuthSystemException e) {
             if (log.isDebugEnabled()) {
-                log.debug("Error in building authenticationResponse for Authentication Request.");
+                log.debug("Error in building authenticationResponse for Authentication Request made by client with clientID : " + cibaAuthRequestDTO.getAudience()+ ".");
 
             }
 
@@ -188,7 +213,7 @@ public class CibaAuthResponseHandler  {
             }
         }
 
-        //return empty response
+        //Return empty response.
         return Response.noContent().build();
     }
 
@@ -203,6 +228,11 @@ public class CibaAuthResponseHandler  {
      */
     public Response createErrorResponse(AuthResponseContextDTO authResponseContextDTO)
             throws OAuthSystemException {
+
+        if (log.isDebugEnabled()) {
+            log.debug("Creating Error Response for CIBA Authentication Request.");
+        }
+
         OAuthResponse errorresponse =  OAuthASResponse
                 .errorResponse(authResponseContextDTO.getErrorCode())
                 .setError(authResponseContextDTO.getError())

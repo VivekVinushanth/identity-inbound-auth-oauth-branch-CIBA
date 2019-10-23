@@ -100,6 +100,7 @@ public class AuthRequestValidator {
             /*Validation for aud-audience.
              * Mandatory parameter if signed.
              */
+            //
             if (claimsSet.getAudience().isEmpty()) {
 
                 if (log.isDebugEnabled()) {
@@ -114,7 +115,7 @@ public class AuthRequestValidator {
                 List<String> aud = claimsSet.getAudience();
 
                 if (aud.contains(CibaParams.CIBA_AS_AUDIENCE)) {
-                    //This will be the mandatory value for ciba
+                    // This will be the mandatory value for ciba.
                     isValid = true;
 
                     cibaAuthRequestDTO.setIssuer(CibaParams.CIBA_AS_AUDIENCE);
@@ -545,7 +546,7 @@ public class AuthRequestValidator {
                 && (!String.valueOf(jo.get("login_hint")).equals("null"))
                 && (String.valueOf(jo.get("id_token_hint")).equals("null"))) {
 
-            if (this.isUserExists(String.valueOf(jo.get("login_hint")))) {
+            if (this.doesUserExist(String.valueOf(jo.get("login_hint")))) {
                 //confirmed that user exists in the store and setting the user hint here
                 cibaAuthRequestDTO.setUserHint(String.valueOf(jo.get("login_hint")));
                 validUser = true;
@@ -567,10 +568,10 @@ public class AuthRequestValidator {
                 && (!String.valueOf(jo.get("id_token_hint")).equals("null"))) {
 
             if (OAuth2Util.validateIdToken(String.valueOf(jo.get("id_token_hint")))) {
-                //id token is valid.
+                //provided id_token_hint is valid.
 
-                if(this.isUserExists(String.valueOf(jo.get("id_token_hint")))) {
-                    //user exists in tenant
+                if(this.doesUserExist(String.valueOf(jo.get("id_token_hint")))) {
+                    //user exists in store
                     cibaAuthRequestDTO.setUserHint(getUserfromIDToken(String.valueOf(jo.get("id_token_hint"))));
                     validUser = true;
 
@@ -615,61 +616,23 @@ public class AuthRequestValidator {
      * Verify whether the mentioned user exists
      * @param user_hint it carries user identity
      * @return boolean
+     *
      */
-    private boolean isUserExists(String user_hint) throws UserStoreException, RegistryException, IdentityOAuth2Exception {
+    private boolean doesUserExist(String user_hint) throws UserStoreException, IdentityOAuth2Exception {
         //only username is supported as user_hint
 
         if (log.isDebugEnabled()) {
-            log.info("Checked whether user exists in the store. ");
+            log.info("Checking whether user exists in the store.");
         }
-      String domain =  OAuth2Util.getUserStoreDomainFromUserId(user_hint);
-        log.info("domain of user :" +domain);
 
-        int tenantID = OAuth2Util.getTenantIdFromUserName(user_hint);
+        int tenantID = OAuth2Util.getTenantIdFromUserName(user_hint); //getting the tenantID of where he is registered in
 
         log.info("tenantID of user :" +tenantID);
 
         return AuthReqIDManager.getInstance().isUserExists(tenantID,user_hint);
 
-
     }
 
- /*   *//**
-     * Verify whether the mentioned user exists and checks its a valid token from https://localhost:9443/oauth2/token endpoint
-     * @param id_token_hint it carries user identity
-     * @return boolean
-     *//*
-    private boolean isValidIdTokenHint(String id_token_hint, int tenantID) throws ParseException, UserStoreException, RegistryException {
-        SignedJWT signedJWT = SignedJWT.parse(id_token_hint);
-        JWTClaimsSet claimsSet = signedJWT.getJWTClaimsSet();
-        //JSONObject jo = signedJWT.getJWTClaimsSet().toJSONObject();
-
-        String issuer = claimsSet.getIssuer();
-
-
-        if(issuer == null || !issuer.equals(VALID_ID_TOKEN_ISSUER)) {
-            if (log.isDebugEnabled()) {
-                log.info("Provided id_token used as a hint is not from a valid issuer. ");
-            }
-
-            return false;
-        } else {
-                OAuth2Util.validateIdToken(id_token_hint)
-            if (claimsSet.getSubject() == null) {
-                if (log.isDebugEnabled()) {
-                    log.info("Subject not availabale in the id_token_hint");
-                }
-                return false;
-            } else {
-                if (isUserExists(claimsSet.getSubject(), tenantID)) {
-                    return true;
-                }else {
-                    return false;
-                }
-            }
-        }
-
-    }*/
 
     /**
      * Obtain sub from given id token
