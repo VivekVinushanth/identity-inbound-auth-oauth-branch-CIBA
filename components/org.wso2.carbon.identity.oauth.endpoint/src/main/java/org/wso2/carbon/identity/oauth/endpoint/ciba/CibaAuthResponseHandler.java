@@ -33,6 +33,7 @@ import org.wso2.carbon.identity.oauth.ciba.dto.CibaAuthRequestDTO;
 import org.wso2.carbon.identity.oauth.ciba.exceptions.ErrorCodes;
 import org.wso2.carbon.identity.oauth.ciba.handlers.CibaAuthorizationHandler;
 import org.wso2.carbon.identity.oauth.ciba.model.CibaAuthCodeDO;
+import org.wso2.carbon.identity.oauth.ciba.model.CibaAuthResponse;
 import org.wso2.carbon.identity.oauth.ciba.util.AuthReqIDManager;
 import org.wso2.carbon.identity.oauth.ciba.util.AuthzRequestDOBuilder;
 import org.wso2.carbon.identity.oauth.ciba.util.CibaAuthCodeDOBuilder;
@@ -118,8 +119,18 @@ public class CibaAuthResponseHandler  {
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType(MediaType.APPLICATION_JSON);
             OAuthResponse.OAuthResponseBuilder cibaAuthResponsebuilder = OAuthResponse.
-                    status(HttpServletResponse.SC_OK).setParam(CibaParams.AUTH_REQ_ID, cibaAuthCode).
-                    setParam(CibaParams.EXPIRES_IN,String.valueOf(expiresIn)).setParam(CibaParams.INTERVAL, "2");
+                    status(HttpServletResponse.SC_OK)
+                    .setParam(CibaParams.AUTH_REQ_ID, cibaAuthCode)
+                    .setParam(CibaParams.EXPIRES_IN,Long.toString(expiresIn))
+                    .setParam(CibaParams.INTERVAL, Long.toString(CibaParams.interval));
+
+
+            CibaAuthResponse.CibaAuthResponseBuilder cibaActualAuthResponsebuilder = CibaAuthResponse
+                    .cibaAuthenticationResponse(HttpServletResponse.SC_OK)
+                    .setAuthReqID(cibaAuthCode)
+                    .setExpiresIn(Long.toString(expiresIn))
+                    .setInterval(Long.toString(CibaParams.interval));
+
 
             if (log.isDebugEnabled()) {
                 log.info("Creating CIBA Authentication response to the request made by client with clientID : " + cibaAuthRequestDTO.getAudience() + ".");
@@ -128,6 +139,8 @@ public class CibaAuthResponseHandler  {
             Response.ResponseBuilder respBuilder = Response.status(response.getStatus());
 
             OAuthResponse cibaAuthResponse  = cibaAuthResponsebuilder.buildJSONMessage();
+
+            OAuthResponse cibaAuthenticationresponse  = cibaActualAuthResponsebuilder.buildJSONMessage();
 
             //Build authCode with all the parameters that need to be persisted.
             CibaAuthCodeDO cibaAuthCodeDO = CibaAuthCodeDOBuilder.getInstance().buildCibaAuthCodeDO(cibaAuthCode);
@@ -162,7 +175,8 @@ public class CibaAuthResponseHandler  {
             if(log.isDebugEnabled()) {
                 log.info("Returning CIBA Authentication Response for the request made by client with clientID : " + cibaAuthRequestDTO.getAudience() + ".");
             }
-            return respBuilder.entity(cibaAuthResponse.getBody()).build();
+          // return respBuilder.entity(cibaAuthResponse.getBody()).build();
+           return respBuilder.entity(cibaAuthenticationresponse.getBody()).build();
 
         } catch (OAuthSystemException e) {
             if (log.isDebugEnabled()) {
