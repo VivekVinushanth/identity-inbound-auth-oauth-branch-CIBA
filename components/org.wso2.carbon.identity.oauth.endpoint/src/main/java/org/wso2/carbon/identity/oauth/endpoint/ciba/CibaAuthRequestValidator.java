@@ -109,7 +109,7 @@ public class CibaAuthRequestValidator {
 
         } else {
 
-           //Validation for aud-audience.
+            //Validation for aud-audience.
             if (claimsSet.getAudience().isEmpty()) {
                 //No value for audience found in the request.
 
@@ -158,6 +158,18 @@ public class CibaAuthRequestValidator {
                 authResponseContextDTO.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 authResponseContextDTO.setError(ErrorCodes.INVALID_REQUEST);
                 authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.MISSING_PARAMETERS);
+                return false;
+
+            }else if (StringUtils.isBlank(claimsSet.getJWTID())) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Invalid CIBA Authentication Request made by client with clientID : " +
+                            cibaAuthRequestDTO.getAudience() + ".The request has invalid values for the parameter 'jti'.");
+                }
+                isValid = false;
+
+                authResponseContextDTO.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                authResponseContextDTO.setError(ErrorCodes.INVALID_REQUEST);
+                authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.INVALID_PARAMETERS);
                 return false;
             } else {
 
@@ -270,7 +282,7 @@ public class CibaAuthRequestValidator {
 
             }
 
-            log.info(String.valueOf(jo.get(CibaParams.SCOPE)));
+
 
             //Validation for scope.Mandatory parameter for CIBA AuthenticationRequest.
             if (jo.get(CibaParams.SCOPE) == null) {
@@ -306,106 +318,178 @@ public class CibaAuthRequestValidator {
             }
 
 
-            //Validation for client_notification_token.Mandatory parameter for CIBA AuthenticationRequest if ping mode.
-            if (String.valueOf(jo.get(CibaParams.CLIENT_NOTIFICATION_TOKEN)) == null) {
-                //Client_notification_token does not exist.
+            //Validation for client_notification_token.Mandatory parameter for CIBA Authentication Request for ping mode.
+            if (jo.get(CibaParams.CLIENT_NOTIFICATION_TOKEN) == null) {
+                //Client_notification_token does not exist - acceptable.
 
             } else {
-                cibaAuthRequestDTO.setClientNotificationToken(String.valueOf(jo.get(CibaParams.CLIENT_NOTIFICATION_TOKEN)));
-                isValid = true;
+                if (StringUtils.isBlank(jo.get(CibaParams.CLIENT_NOTIFICATION_TOKEN).toString())) {
+                    //Blank values for client_notification_token.
+                    if (log.isDebugEnabled()) {
+                        log.debug("Invalid CIBA Authentication Request made by client with clientID : " +
+                                cibaAuthRequestDTO.getAudience() + ".The request is with invalid  value for 'client_notification_token'.");
+                    }
+                    authResponseContextDTO.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    authResponseContextDTO.setError(ErrorCodes.INVALID_REQUEST);
+                    authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.INVALID_PARAMETERS);
+                    isValid = false;
+
+                    return false;
+                } else {
+                    cibaAuthRequestDTO.setClientNotificationToken(String.valueOf(jo.get(CibaParams.CLIENT_NOTIFICATION_TOKEN)));
+                    isValid = true;
+                }
             }
 
 
             //Validation for acr-values.
-            if ((String.valueOf(jo.get(CibaParams.ACR_VALUES)).isEmpty())) {
-                //do nothing
-
-
-            } else if ((jo.get(CibaParams.ACR_VALUES)) == null) {
-                //do nothing
-
+            if ((jo.get(CibaParams.ACR_VALUES)) == null) {
+                //No acr claim.
 
             } else {
-                cibaAuthRequestDTO.setAcrValues(String.valueOf(jo.get(CibaParams.ACR_VALUES)));
-                isValid = true;
+                if (StringUtils.isBlank(jo.get(CibaParams.ACR_VALUES).toString())) {
+                    //ACR claim with blank values.
+                    if (log.isDebugEnabled()) {
+                        log.debug("Invalid CIBA Authentication Request made by client with clientID : " +
+                                cibaAuthRequestDTO.getAudience() + ".The request is with invalid  value for 'acr'.");
+                    }
+                    authResponseContextDTO.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    authResponseContextDTO.setError(ErrorCodes.INVALID_REQUEST);
+                    authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.INVALID_PARAMETERS);
+                    isValid = false;
 
+                    return false;
+
+                } else {
+                    cibaAuthRequestDTO.setAcrValues(String.valueOf(jo.get(CibaParams.ACR_VALUES)));
+                    isValid = true;
+
+                }
             }
 
 
             //Validation for usercode-values.
-            if ((String.valueOf(jo.get(CibaParams.USER_CODE)).isEmpty())) {
-                //do nothing
 
-
-            } else if ((jo.get(CibaParams.USER_CODE)) == null) {
-                //do nothing
-
+            if ((jo.get(CibaParams.USER_CODE)) == null) {
+                //No claims for user_code.
 
             } else {
-                cibaAuthRequestDTO.setUserCode(String.valueOf(jo.get(CibaParams.USER_CODE)));
-                isValid = true;
+                if ((StringUtils.isBlank(jo.get(CibaParams.USER_CODE).toString()))) {
+                    //user_code with blank values
 
+                    if (log.isDebugEnabled()) {
+                        log.debug("Invalid CIBA Authentication Request made by client with clientID : " +
+                                cibaAuthRequestDTO.getAudience() + ".The request is with invalid  value for 'user_code'.");
+                    }
+                    authResponseContextDTO.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    authResponseContextDTO.setError(ErrorCodes.INVALID_REQUEST);
+                    authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.INVALID_PARAMETERS);
+                    isValid = false;
+
+                    return false;
+                } else {
+                    cibaAuthRequestDTO.setUserCode(String.valueOf(jo.get(CibaParams.USER_CODE)));
+                    isValid = true;
+
+                }
             }
 
 
             //Validation for binding_message.
-            if ((String.valueOf(jo.get(CibaParams.BINDING_MESSAGE)).isEmpty())) {
-                //do nothing
+            if ((jo.get(CibaParams.BINDING_MESSAGE)) == null) {
+                //Request has no claim for binding_message.
 
 
-            } else if ((jo.get(CibaParams.BINDING_MESSAGE)) == null) {
-                //do nothing
+            } else  {
+                if (StringUtils.isBlank(jo.get(CibaParams.BINDING_MESSAGE).toString())) {
+                    //Binding_message with a blank value which is not acceptable.
 
 
-            } else {
-                cibaAuthRequestDTO.setBindingMessage(String.valueOf(jo.get(CibaParams.BINDING_MESSAGE)));
-                isValid = true;
+                    if (log.isDebugEnabled()) {
+                        log.debug("Invalid CIBA Authentication Request made by client with clientID : " +
+                                cibaAuthRequestDTO.getAudience() + ".The request is with invalid  value for 'binding_message'.");
+                    }
+                    authResponseContextDTO.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    authResponseContextDTO.setError(ErrorCodes.INVALID_REQUEST);
+                    authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.INVALID_PARAMETERS);
+                    isValid = false;
 
+                    return false;
+
+
+                } else {
+                    cibaAuthRequestDTO.setBindingMessage(String.valueOf(jo.get(CibaParams.BINDING_MESSAGE)));
+                    isValid = true;
+
+                }
             }
 
 
             //Validation for transaction_context.
-            if ((String.valueOf(jo.get(CibaParams.TRANSACTION_CONTEXT)).isEmpty())) {
-                //do nothing
+             if ((jo.get(CibaParams.TRANSACTION_CONTEXT)) == null) {
+                 //Request has no transaction_context claim.
+
+             } else {
+                 if (StringUtils.isBlank(jo.get(CibaParams.TRANSACTION_CONTEXT).toString())) {
+                     if (log.isDebugEnabled()) {
+                         log.debug("Invalid CIBA Authentication Request made by client with clientID : " +
+                                 cibaAuthRequestDTO.getAudience() + ".The request is with invalid  value for 'transaction_context'.");
+                     }
+                     authResponseContextDTO.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                     authResponseContextDTO.setError(ErrorCodes.INVALID_REQUEST);
+                     authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.INVALID_PARAMETERS);
+                     isValid = false;
+
+                     return false;
 
 
-            } else if ((jo.get(CibaParams.TRANSACTION_CONTEXT)) == null) {
-                //do nothing
+                 } else {
+                     cibaAuthRequestDTO.setTransactionContext(String.valueOf(jo.get(CibaParams.TRANSACTION_CONTEXT)));
+                     isValid = true;
 
-
-            } else {
-                cibaAuthRequestDTO.setTransactionContext(String.valueOf(jo.get(CibaParams.TRANSACTION_CONTEXT)));
-                isValid = true;
-
-            }
+                 }
+             }
 
 
             //Validation for iat-issued at.Mandatory parameter if signed.
-            if ((String.valueOf(jo.get(CibaParams.REQUESTED_EXPIRY)).isEmpty())) {
-                //do nothing
-
-
-            } else if ((jo.get(CibaParams.REQUESTED_EXPIRY)) == null) {
+            if ((jo.get(CibaParams.REQUESTED_EXPIRY)) == null) {
                 //do nothing
 
 
             } else {
-                String requestedExpiryAsString = String.valueOf(jo.get(CibaParams.REQUESTED_EXPIRY));
-                long requestedExpiry = Long.parseLong(requestedExpiryAsString);
-
-                if (requestedExpiry < CibaParams.MAXIMUM_REQUESTED_EXPIRY) {
-                    cibaAuthRequestDTO.setRequestedExpiry(requestedExpiry);
-                    isValid = true;
-                } else {
-                    cibaAuthRequestDTO.setRequestedExpiry(CibaParams.MAXIMUM_REQUESTED_EXPIRY);
+                if (StringUtils.isBlank(jo.get(CibaParams.REQUESTED_EXPIRY).toString())) {
+                    //Requested expiry is a blank value.
                     if (log.isDebugEnabled()) {
-                        log.debug("Warning on  CIBA Authentication Request made by client with clientID : " +
-                                cibaAuthRequestDTO.getAudience() + ".Requested expiry is too long.Setting the maximum default value.");
+                        log.debug("Invalid CIBA Authentication Request made by client with clientID : " +
+                                cibaAuthRequestDTO.getAudience() + ".The request is with invalid  value for 'requested_expiry'.");
                     }
+                    authResponseContextDTO.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    authResponseContextDTO.setError(ErrorCodes.INVALID_REQUEST);
+                    authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.INVALID_PARAMETERS);
+                    isValid = false;
+
+                    return false;
+
+                } else {
+                    String requestedExpiryAsString = String.valueOf(jo.get(CibaParams.REQUESTED_EXPIRY));
+                    long requestedExpiry = Long.parseLong(requestedExpiryAsString);
+
+                    if (requestedExpiry < CibaParams.MAXIMUM_REQUESTED_EXPIRY) {
+                        cibaAuthRequestDTO.setRequestedExpiry(requestedExpiry);
+                        isValid = true;
+                    } else {
+                        cibaAuthRequestDTO.setRequestedExpiry(CibaParams.MAXIMUM_REQUESTED_EXPIRY);
+                        if (log.isDebugEnabled()) {
+                            log.debug("Warning on  CIBA Authentication Request made by client with clientID : " +
+                                    cibaAuthRequestDTO.getAudience() + ".Requested expiry is too long.Setting the maximum default value.");
+                        }
 
 
+                    }
                 }
             }
+
+
 
             if (log.isDebugEnabled()) {
                 log.debug(" CIBA Authentication Request made by client with clientID : " +
@@ -414,6 +498,8 @@ public class CibaAuthRequestValidator {
 
             authResponseContextDTO.setStatus(HttpServletResponse.SC_OK);
             return isValid;
+
+
         }
     }
 
@@ -430,7 +516,7 @@ public class CibaAuthRequestValidator {
     public Boolean isValidAudience(JWTClaimsSet claimsSet , AuthResponseContextDTO authResponseContextDTO,
                                    CibaAuthRequestDTO cibaAuthRequestDTO) {
 
-       boolean isValidAudience = false;
+        boolean isValidAudience = false;
 
         //Validation for aud-audience.
         if (claimsSet.getAudience().isEmpty()) {
@@ -473,7 +559,7 @@ public class CibaAuthRequestValidator {
 
 
     /**
-`     * This method cheks whether the client is valid
+     `     * This method cheks whether the client is valid
      * @param request CIBA Authentication request
      * @return Boolean
      * @throws IdentityOAuth2Exception,InvalidOAuthClientException
@@ -513,27 +599,27 @@ public class CibaAuthRequestValidator {
             return false;
         } else  {
             try {
-            OAuthAppDO appDO = OAuth2Util.getAppInformationByClientId(clientId);
+                OAuthAppDO appDO = OAuth2Util.getAppInformationByClientId(clientId);
 
-            String callbackUri = appDO.getCallbackUrl();
-            String clientSecret = appDO.getOauthConsumerSecret();
+                String callbackUri = appDO.getCallbackUrl();
+                String clientSecret = appDO.getOauthConsumerSecret();
 
 
-            if (clientSecret == null || StringUtils.isBlank(clientSecret) || clientSecret.equals("null")) {
-                authResponseContextDTO.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                authResponseContextDTO.setError(ErrorCodes.UNAUTHORIZED_CLIENT);
-                authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.UNKNOWN_CLIENT);
-                cibaAuthRequestDTO = null;
+                if (clientSecret == null || StringUtils.isBlank(clientSecret) || clientSecret.equals("null")) {
+                    authResponseContextDTO.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    authResponseContextDTO.setError(ErrorCodes.UNAUTHORIZED_CLIENT);
+                    authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.UNKNOWN_CLIENT);
+                    cibaAuthRequestDTO = null;
 
-                if (log.isDebugEnabled()) {
-                    log.debug("The request : " + request + " doesn't have a proper clientID.");
-                }
-                return false;
-            } else {
+                    if (log.isDebugEnabled()) {
+                        log.debug("The request : " + request + " doesn't have a proper clientID.");
+                    }
+                    return false;
+                } else {
                     cibaAuthRequestDTO.setAudience(clientId);
-                return true;
-            }
-        } catch (InvalidOAuthClientException e) {
+                    return true;
+                }
+            } catch (InvalidOAuthClientException e) {
                 authResponseContextDTO.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 authResponseContextDTO.setError(ErrorCodes.UNAUTHORIZED_CLIENT);
                 authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.UNKNOWN_CLIENT);
@@ -543,7 +629,7 @@ public class CibaAuthRequestValidator {
                 return false;
             }
         }
-        }
+    }
 
 
 
@@ -596,7 +682,7 @@ public class CibaAuthRequestValidator {
     public boolean isValidUser(String authRequest, AuthResponseContextDTO authResponseContextDTO,
                                CibaAuthRequestDTO cibaAuthRequestDTO) throws ParseException, IdentityOAuth2Exception,
             UserStoreException, RegistryException {
-       boolean validUser = false;
+        boolean validUser = false;
         SignedJWT signedJWT = SignedJWT.parse(authRequest);
         JWTClaimsSet claimsSet = signedJWT.getJWTClaimsSet();
         JSONObject jo = signedJWT.getJWTClaimsSet().toJSONObject();
@@ -655,7 +741,7 @@ public class CibaAuthRequestValidator {
 
                 return false;
 
-        } else {
+            } else {
                 if (OAuth2Util.validateIdToken(String.valueOf(jo.get(CibaParams.ID_TOKEN_HINT)))) {
                     //Provided id_token_hint is valid.
 
