@@ -20,15 +20,14 @@ package org.wso2.carbon.identity.oauth.endpoint.ciba;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.oltu.oauth2.as.response.OAuthASResponse;
 import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
-import org.apache.oltu.oauth2.common.message.OAuthResponse;
 import org.wso2.carbon.identity.oauth.ciba.common.CibaParams;
 import org.wso2.carbon.identity.oauth.ciba.dto.AuthResponseContextDTO;
 import org.wso2.carbon.identity.oauth.ciba.dto.CibaAuthRequestDTO;
 import org.wso2.carbon.identity.oauth.ciba.exceptions.ErrorCodes;
 import org.wso2.carbon.identity.oauth.common.exception.InvalidOAuthClientException;
 import org.wso2.carbon.identity.oauth2.IdentityOAuth2Exception;
+import org.wso2.carbon.registry.core.exceptions.RegistryException;
 import org.wso2.carbon.user.api.UserStoreException;
 
 import java.text.ParseException;
@@ -51,14 +50,14 @@ public class OAuth2CibaEndpoint {
     @Path("/")
     @Consumes("application/x-www-form-urlencoded")
     @Produces("application/json")
-    public Response ciba(@Context HttpServletRequest request, @Context HttpServletResponse response) throws IdentityOAuth2Exception {
+    public Response ciba(@Context HttpServletRequest request, @Context HttpServletResponse response) throws  OAuthSystemException {
 
-        Map<String, String[]> attributeNames =  request.getParameterMap();
+        Map<String, String[]> attributeNames = request.getParameterMap();
         //Capture all CIBA Authentication Request parameters.
 
 
         log.info("CIBA request has hit Client Initiated Back-Channel Authentication EndPoint.");
-
+        AuthResponseContextDTO authResponseContextDTO = new AuthResponseContextDTO(); //DTO to capture authenticationResponse Context.
         try {
             if (attributeNames.containsKey(CibaParams.REQUEST)) {
                 //Confirmed existence of 'request' parameter.
@@ -73,9 +72,9 @@ public class OAuth2CibaEndpoint {
 
                 CibaAuthRequestDTO cibaAuthRequestDTO = new CibaAuthRequestDTO(); //DTO to capture claims in request.
 
-                AuthResponseContextDTO authResponseContextDTO = new AuthResponseContextDTO(); //DTO to capture authenticationResponse Context.
 
-                if (AuthRequestValidator.getInstance().isValidClient(authRequest, authResponseContextDTO, cibaAuthRequestDTO)) {
+
+                if (CibaAuthRequestValidator.getInstance().isValidClient(authRequest, authResponseContextDTO, cibaAuthRequestDTO)) {
                     //The CIBA Authentication Request is with proper client.
 
                     if (log.isDebugEnabled()) {
@@ -83,7 +82,7 @@ public class OAuth2CibaEndpoint {
                                 " is having a proper clientID : " + cibaAuthRequestDTO.getAudience() + " as the issuer.");
                     }
 
-                    if (AuthRequestValidator.getInstance().isValidUser(authRequest, authResponseContextDTO, cibaAuthRequestDTO)) {
+                    if (CibaAuthRequestValidator.getInstance().isValidUser(authRequest, authResponseContextDTO, cibaAuthRequestDTO)) {
                         //The CIBA Authentication Request is with proper user hint.
 
                         if (log.isDebugEnabled()) {
@@ -91,11 +90,11 @@ public class OAuth2CibaEndpoint {
                                     " is having a proper user hint  : " + cibaAuthRequestDTO.getUserHint() + ".");
                         }
 
-                        if (AuthRequestValidator.getInstance().isValidUserCode(authRequest, authResponseContextDTO)) {
+                        if (CibaAuthRequestValidator.getInstance().isValidUserCode(authRequest, authResponseContextDTO)) {
                             //Usercode is validated.
 
 
-                            if (AuthRequestValidator.getInstance().isValidAuthRequest
+                            if (CibaAuthRequestValidator.getInstance().isValidAuthRequest
                                     (authRequest, authResponseContextDTO, cibaAuthRequestDTO)) {
                                 //Authentication request is validated.
 
@@ -125,14 +124,13 @@ public class OAuth2CibaEndpoint {
                                 }
                             } else {
                                 try {
-
+                                    //Create Error Response if the request is not valid.
                                     if (log.isDebugEnabled()) {
                                         log.debug("CIBA Authentication Request made by Client with clientID," +
                                                 cibaAuthRequestDTO.getAudience() + " is returned with an Error.");
                                     }
 
                                     return CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
-                                    //Create Error Response.
 
 
                                 } catch (NullPointerException e) {
@@ -144,17 +142,17 @@ public class OAuth2CibaEndpoint {
                                 }
                             }
                         } else {
-                            //Create Error Response.
-                            return  CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
+                            //Create Error Response if there is invalid user_code.
+                            return CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
                         }
                     } else {
 
-                        //Create Error Response.
-                        return    CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
+                        //Create Error Response if the user is not valid.
+                        return CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
                     }
                 } else {
 
-                    //Create Error Response.
+                    //Create Error Response if the client is not valid.
                     return CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
                 }
 
@@ -167,53 +165,25 @@ public class OAuth2CibaEndpoint {
                             "no 'request' parameter.");
                 }
 
-                OAuthResponse errorresponse;
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                authResponseContextDTO.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                authResponseContextDTO.setError(ErrorCodes.INVALID_REQUEST);
+                authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.MISSING_PARAMETERS);
 
-                errorresponse = OAuthASResponse
-                        .errorResponse(response.getStatus())
-                        .setError(ErrorCodes.INVALID_REQUEST)
-                        .setErrorDescription(ErrorCodes.SubErrorCodes.MISSING_PARAMETERS)
-                        .buildJSONMessage();
+                return CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
+            }
+        } catch ( ParseException  | OAuthSystemException | UserStoreException | IdentityOAuth2Exception | RegistryException e) {
+            //Catch all other thrown exceptions and throw Identity OAuth Exception.
 
+            authResponseContextDTO.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            authResponseContextDTO.setError(ErrorCodes.INTERNAL_SERVER_ERROR);
+            authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.UNEXPECTED_SERVER_ERROR);
 
-                Response.ResponseBuilder respBuilder = Response.status(response.getStatus());
-                return respBuilder.entity(errorresponse.getBody()).build();
+            return CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
 
-            }
-        } catch (InvalidOAuthClientException e) {
-            if (log.isDebugEnabled()) {
-                log.debug(e);
-            }
-            throw new IdentityOAuth2Exception(e.getMessage());
-        } catch (ParseException e) {
-            if (log.isDebugEnabled()) {
-                log.debug(e);
-            }
-            throw new IdentityOAuth2Exception(e.getMessage());
-        } catch (OAuthSystemException e) {
-            if (log.isDebugEnabled()) {
-                log.debug(e);
-            }
-            throw new IdentityOAuth2Exception(e.getMessage());
-        } catch (IdentityOAuth2Exception e) {
-            if (log.isDebugEnabled()) {
-                log.debug(e);
-            }
-            throw new IdentityOAuth2Exception(e.getMessage());
-        } catch (UserStoreException e) {
-            if (log.isDebugEnabled()) {
-                log.debug(e);
-            }
-            throw new IdentityOAuth2Exception(e.getMessage());
-        } catch (Exception e) {
-            if (log.isDebugEnabled()) {
-                log.debug(e);
-            }
-            throw new IdentityOAuth2Exception(e.getMessage());
         }
-        return null;
 
+        //Returning no content at this point.Will not affect the flow.
+        return Response.noContent().build();
     }
 }
 

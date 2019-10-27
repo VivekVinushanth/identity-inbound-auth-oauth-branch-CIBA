@@ -118,14 +118,8 @@ public class CibaAuthResponseHandler  {
             //Create authentication response.
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType(MediaType.APPLICATION_JSON);
-            OAuthResponse.OAuthResponseBuilder cibaAuthResponsebuilder = OAuthResponse.
-                    status(HttpServletResponse.SC_OK)
-                    .setParam(CibaParams.AUTH_REQ_ID, cibaAuthCode)
-                    .setParam(CibaParams.EXPIRES_IN,Long.toString(expiresIn))
-                    .setParam(CibaParams.INTERVAL, Long.toString(CibaParams.interval));
 
-
-            CibaAuthResponse.CibaAuthResponseBuilder cibaActualAuthResponsebuilder = CibaAuthResponse
+            CibaAuthResponse.CibaAuthResponseBuilder cibaAuthResponsebuilder = CibaAuthResponse
                     .cibaAuthenticationResponse(HttpServletResponse.SC_OK)
                     .setAuthReqID(cibaAuthCode)
                     .setExpiresIn(Long.toString(expiresIn))
@@ -138,9 +132,7 @@ public class CibaAuthResponseHandler  {
 
             Response.ResponseBuilder respBuilder = Response.status(response.getStatus());
 
-            OAuthResponse cibaAuthResponse  = cibaAuthResponsebuilder.buildJSONMessage();
-
-            OAuthResponse cibaAuthenticationresponse  = cibaActualAuthResponsebuilder.buildJSONMessage();
+            OAuthResponse cibaAuthenticationresponse  = cibaAuthResponsebuilder.buildJSONMessage();
 
             //Build authCode with all the parameters that need to be persisted.
             CibaAuthCodeDO cibaAuthCodeDO = CibaAuthCodeDOBuilder.getInstance().buildCibaAuthCodeDO(cibaAuthCode);
@@ -225,6 +217,8 @@ public class CibaAuthResponseHandler  {
             if (log.isDebugEnabled()) {
                 log.debug(e);
             }
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
         }
 
         //Return empty response.
@@ -242,6 +236,7 @@ public class CibaAuthResponseHandler  {
      */
     public Response createErrorResponse(AuthResponseContextDTO authResponseContextDTO)
             throws OAuthSystemException {
+        //Create CIBA Authentication Error Response.
 
         if (log.isDebugEnabled()) {
             log.debug("Creating Error Response for CIBA Authentication Request.");
@@ -256,6 +251,9 @@ public class CibaAuthResponseHandler  {
         Response.ResponseBuilder respBuilder = Response.status(authResponseContextDTO.getStatus());
         return respBuilder.entity(errorresponse.getBody()).build();
     }
+
+
+
 
 
 }

@@ -1,6 +1,5 @@
 package org.wso2.carbon.identity.oauth.endpoint.ciba;
 
-import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.wso2.carbon.identity.oauth.ciba.dto.AuthResponseContextDTO;
@@ -13,7 +12,7 @@ import static org.powermock.api.mockito.PowerMockito.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-public class AuthRequestValidatorTest {
+public class CibaAuthRequestValidatorTest {
     private static final String CLIENT_ID_VALUE = "ca19a540f544777860e44e75f605d927";
     private static final String INACTIVE_CLIENT_ID_VALUE = "inactiveId";
 
@@ -36,10 +35,10 @@ public class AuthRequestValidatorTest {
     public void testIsValidClient(String request,AuthResponseContextDTO authResponseContextDTO,
                                   CibaAuthRequestDTO cibaAuthRequestDTO,String clientIDValue){
 
-        AuthRequestValidator authRequestValidator = mock(AuthRequestValidator.class);
+        CibaAuthRequestValidator cibaAuthRequestValidator = mock(CibaAuthRequestValidator.class);
 
         try {
-            assertTrue(authRequestValidator.isValidClient(request,authResponseContextDTO,cibaAuthRequestDTO), null);
+            assertTrue(cibaAuthRequestValidator.isValidClient(request,authResponseContextDTO,cibaAuthRequestDTO), null);
         } catch (ParseException e) {
             e.printStackTrace();
         } catch (IdentityOAuth2Exception e) {
