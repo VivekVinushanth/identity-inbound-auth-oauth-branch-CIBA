@@ -135,7 +135,7 @@ public class OAuth2CibaEndpoint {
                     CibaAuthCodeDOGenerator.getInstance().generateCibaAuthCodeDO(cibaAuthCodeasJWT.serialize());
 
             // Persist CibaAuthCode.
-            CibAuthCodeMgtDAO.getInstance().persistCibaAuthReqCode(cibaAuthCodeDO);
+            CibAuthCodeMgtDAO.getInstance().persistCibaAuthCode(cibaAuthCodeDO);
             if (log.isDebugEnabled()) {
                 log.info("Persisting CibaAuthCodeDO that accumulates parameters to be persisted in regard to the " +
                         "request made by client with clientID : " + cibaAuthRequestDTO.getAudience() + ".");
