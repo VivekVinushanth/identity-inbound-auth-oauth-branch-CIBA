@@ -18,18 +18,23 @@
 
 package org.wso2.carbon.identity.oauth.endpoint.ciba;
 
+import com.nimbusds.jwt.JWT;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.wso2.carbon.identity.oauth.ciba.common.CibaParams;
-import org.wso2.carbon.identity.oauth.ciba.dto.AuthResponseContextDTO;
+import org.wso2.carbon.identity.oauth.ciba.dao.CibAuthCodeMgtDAO;
+import org.wso2.carbon.identity.oauth.ciba.dto.AuthzRequestDTO;
 import org.wso2.carbon.identity.oauth.ciba.dto.CibaAuthRequestDTO;
+import org.wso2.carbon.identity.oauth.ciba.dto.CibaAuthResponseDTO;
+import org.wso2.carbon.identity.oauth.ciba.exceptions.CibaCoreException;
 import org.wso2.carbon.identity.oauth.ciba.exceptions.ErrorCodes;
-import org.wso2.carbon.identity.oauth2.IdentityOAuth2Exception;
-import org.wso2.carbon.registry.core.exceptions.RegistryException;
-import org.wso2.carbon.user.api.UserStoreException;
+import org.wso2.carbon.identity.oauth.ciba.handlers.CibaAuthorizationHandler;
+import org.wso2.carbon.identity.oauth.ciba.model.CibaAuthCodeDO;
+import org.wso2.carbon.identity.oauth.ciba.util.AuthReqManager;
+import org.wso2.carbon.identity.oauth.ciba.util.AuthzRequestDTOGenerator;
+import org.wso2.carbon.identity.oauth.ciba.util.CibaAuthCodeDOGenerator;
 
-import java.text.ParseException;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -40,142 +45,125 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-
 @Path("/ciba")
 public class OAuth2CibaEndpoint {
+
     private static final Log log = LogFactory.getLog(OAuth2CibaEndpoint.class);
 
     @POST
     @Path("/")
     @Consumes("application/x-www-form-urlencoded")
     @Produces("application/json")
-    public Response ciba(@Context HttpServletRequest request, @Context HttpServletResponse response) throws  OAuthSystemException {
+    public Response ciba(@Context HttpServletRequest request, @Context HttpServletResponse response)
+            throws OAuthSystemException {
 
-        Map<String, String[]> attributeNames = request.getParameterMap();
-        // Capture all CIBA Authentication Request parameters.
+        // Capture all  Authentication Request parameters.
+        Map<String, String[]> requestParameterMap = request.getParameterMap();
 
+        if (log.isDebugEnabled()) {
+            log.debug("Authentication request has hit Client Initiated Back-channel Authentication EndPoint.");
+        }
 
-        log.info("Authentication request has hit Client Initiated Back-channel Authentication EndPoint.");
-
-        AuthResponseContextDTO authResponseContextDTO = new AuthResponseContextDTO();
-        // DTO to capture authenticationResponse Context.
+        // DTO to capture claims in request and to create response.
+        CibaAuthRequestDTO cibaAuthRequestDTO = new CibaAuthRequestDTO();
 
         try {
-            if (attributeNames.containsKey(CibaParams.REQUEST)) {
-                // Confirmed existence of 'request' parameter.
-
-
-                String authRequest = request.getParameter(CibaParams.REQUEST);
-
-                if (log.isDebugEnabled()) {
-                    log.debug("CIBA Authentication Request with  'request' :" + authRequest + "  has hit Client " +
-                            "Initiated Back-Channel Authentication EndPoint.");
-                }
-
-                CibaAuthRequestDTO cibaAuthRequestDTO = new CibaAuthRequestDTO();
-                //DTO to capture claims in request.
-
-
-
-                if (CibaAuthRequestValidator.getInstance().isValidClient(authRequest, authResponseContextDTO, cibaAuthRequestDTO)) {
-                    // The CIBA Authentication Request is with proper client.
-
-                    if (log.isDebugEnabled()) {
-                        log.debug("CIBA Authentication Request 'request' :" + authRequest +
-                                " is having a proper clientID : " + cibaAuthRequestDTO.getAudience() + " as the issuer.");
-                    }
-
-                    if (CibaAuthRequestValidator.getInstance().isValidUser(authRequest, authResponseContextDTO, cibaAuthRequestDTO)) {
-                        // The CIBA Authentication Request is with proper user hint.
-
-                        if (log.isDebugEnabled()) {
-                            log.debug("CIBA Authentication Request made by Client with clientID," + cibaAuthRequestDTO.getAudience() +
-                                    " is having a proper user hint  : " + cibaAuthRequestDTO.getUserHint() + ".");
-                        }
-
-                        if (CibaAuthRequestValidator.getInstance().isMatchingUserCode(authRequest, authResponseContextDTO,cibaAuthRequestDTO)) {
-                            // Usercode value match with existing value.
-
-
-                            if (CibaAuthRequestValidator.getInstance().isValidAuthRequest
-                                    (authRequest, authResponseContextDTO, cibaAuthRequestDTO)) {
-                                // Authentication request is validated.
-
-                                if (log.isDebugEnabled()) {
-                                    log.debug("CIBA Authentication Request made by Client with clientID," +
-                                            cibaAuthRequestDTO.getAudience() + " is properly validated.");
-                                    log.debug("CIBA Authentication Request made by Client with clientID," +
-                                            cibaAuthRequestDTO.getAudience() + " is returned with Ciba Authentication Response.");
-                                }
-
-
-                                    // Create a Ciba Authentication Response.
-                                    return CibaAuthResponseHandler.getInstance().
-                                            createAuthResponse(request, response, cibaAuthRequestDTO);
-
-                            } else {
-
-                                    // Create Error Response if the request is not valid.
-                                    if (log.isDebugEnabled()) {
-                                        log.debug("CIBA Authentication Request made by Client with clientID," +
-                                                cibaAuthRequestDTO.getAudience() + " is returned with an Error.");
-                                    }
-
-                                    return CibaAuthResponseHandler.getInstance().
-                                            createErrorResponse(authResponseContextDTO);
-                            }
-
-                        } else {
-                            // Create Error Response if there is invalid user_code.
-                            return CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
-                        }
-                    } else {
-
-                        // Create Error Response if the user is not valid.
-                        return CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
-                    }
-                } else {
-
-                    // Create Error Response if the client is not valid.
-                    return CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
-                }
-
-
-            } else {
-                // Create error response since there is no 'request' parameter which is a must in signed request.
+            if (!requestParameterMap.containsKey(CibaParams.REQUEST)) {
+                // Mandatory 'request' parameter does not exist.
 
                 if (log.isDebugEnabled()) {
                     log.debug("CIBA Authentication Request that hits Client Initiated Authentication Endpoint has " +
                             "no 'request' parameter.");
                 }
+                throw new CibaAuthFailedException(HttpServletResponse.SC_BAD_REQUEST, ErrorCodes.INVALID_REQUEST,
+                        ErrorCodes.SubErrorCodes.MISSING_PARAMETERS);
 
-                authResponseContextDTO.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                authResponseContextDTO.setError(ErrorCodes.INVALID_REQUEST);
-                authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.MISSING_PARAMETERS);
-
-                return CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
             }
-        } catch (ParseException  | OAuthSystemException | UserStoreException | IdentityOAuth2Exception |
-                RegistryException | NullPointerException e) {
-            // Catch all other thrown exceptions and return internal server error.
 
-            authResponseContextDTO.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            authResponseContextDTO.setError(ErrorCodes.INTERNAL_SERVER_ERROR);
-            authResponseContextDTO.setErrorDescription(ErrorCodes.SubErrorCodes.UNEXPECTED_SERVER_ERROR + e.getMessage());
+            // Capturing authentication request.
+            String authRequest = request.getParameter(CibaParams.REQUEST);
 
-            return CibaAuthResponseHandler.getInstance().createErrorResponse(authResponseContextDTO);
+            if (log.isDebugEnabled()) {
+                log.debug("CIBA Authentication Request with  'request' :" + authRequest + "  has hit Client " +
+                        "Initiated Back-Channel Authentication EndPoint.");
+            }
 
+            CibaAuthRequestValidator.getInstance().validateClient(authRequest, cibaAuthRequestDTO);
+            // The CIBA Authentication Request is with proper client.
+            if (log.isDebugEnabled()) {
+                log.debug("CIBA Authentication Request 'request' :" + authRequest +
+                        " is having a proper clientID : " + cibaAuthRequestDTO.getAudience() + " as the issuer.");
+            }
+
+            CibaAuthRequestValidator.getInstance().validateUser(authRequest, cibaAuthRequestDTO);
+            // The CIBA Authentication Request is with proper user hint.
+            if (log.isDebugEnabled()) {
+                log.debug("CIBA Authentication Request made by Client with clientID," +
+                        cibaAuthRequestDTO.getAudience() + " is having a proper user hint  : " +
+                        cibaAuthRequestDTO.getUserHint() + ".");
+            }
+
+            if (CibaAuthRequestValidator.getInstance().isMatchingUserCode(authRequest, cibaAuthRequestDTO)) {
+                // The CIBA Authentication Request is with proper user_code.
+                if (log.isDebugEnabled()) {
+                    log.debug("CIBA Authentication Request made by Client with clientID," +
+                            cibaAuthRequestDTO.getAudience() + " is having a proper user_code  : " +
+                            cibaAuthRequestDTO.getUserCode() + ".");
+                }
+            }
+
+            CibaAuthRequestValidator.getInstance().validateAuthRequest(authRequest, cibaAuthRequestDTO);
+            // Authentication request is validated.
+            if (log.isDebugEnabled()) {
+                log.debug("CIBA Authentication Request made by Client with clientID," +
+                        cibaAuthRequestDTO.getAudience() + " is properly validated.");
+            }
+
+            // Building Authentication response DTO from RequestDTO.
+            CibaAuthResponseDTO cibaAuthResponseDTO =
+                    AuthReqManager.getInstance().buildCibaAuthResponseDTO(cibaAuthRequestDTO);
+
+            // Create JWT as CibaAuthCode.
+            JWT cibaAuthCodeasJWT = AuthReqManager.getInstance().getCibaAuthCode(cibaAuthResponseDTO);
+            if (log.isDebugEnabled()) {
+                log.info("Creating CibaAuthCode as a JWT for the request made by client with clientID : " +
+                        cibaAuthRequestDTO.getAudience() + ".");
+            }
+
+            // Build authCode from JWT with all the parameters that need to be persisted.
+            CibaAuthCodeDO cibaAuthCodeDO =
+                    CibaAuthCodeDOGenerator.getInstance().generateCibaAuthCodeDO(cibaAuthCodeasJWT.serialize());
+
+            // Persist CibaAuthCode.
+            CibAuthCodeMgtDAO.getInstance().persistCibaAuthReqCode(cibaAuthCodeDO);
+            if (log.isDebugEnabled()) {
+                log.info("Persisting CibaAuthCodeDO that accumulates parameters to be persisted in regard to the " +
+                        "request made by client with clientID : " + cibaAuthRequestDTO.getAudience() + ".");
+            }
+
+            //Build authorize request data transfer object.
+            AuthzRequestDTO authzRequestDTO = AuthzRequestDTOGenerator.getInstance().
+                    buildAuthzRequestDO(cibaAuthResponseDTO, cibaAuthCodeDO);
+            if (log.isDebugEnabled()) {
+                log.info("Build CibaAuthzRequestDTO using  CibaAuthCodeDo in regard to the request made by " +
+                        "client with clientID : " + cibaAuthResponseDTO.getAudience() + ".");
+            }
+
+            //Http authorize call to /authorize end point.
+            CibaAuthorizationHandler.getInstance().initiateAuthzRequest(authzRequestDTO);
+            if (log.isDebugEnabled()) {
+                log.info("Firing a Authorization request in regard to the request made by client with clientID : "
+                        + cibaAuthResponseDTO.getAudience() + ".");
+            }
+
+            // Create and return Ciba Authentication Response.
+            return CibaAuthResponseHandler.getInstance().createAuthResponse(request, response, cibaAuthResponseDTO
+                    , cibaAuthCodeasJWT);
+
+        } catch (CibaAuthFailedException e) {
+            return CibaAuthResponseHandler.getInstance().createErrorResponse(e);
+        } catch (CibaCoreException e) {
+            return CibaAuthResponseHandler.getInstance().createErrorResponse(e);
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
