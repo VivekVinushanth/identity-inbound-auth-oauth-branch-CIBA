@@ -23,7 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.wso2.carbon.identity.oauth.ciba.common.CibaParams;
-import org.wso2.carbon.identity.oauth.ciba.dao.CibaAuthCodeMgtDAO;
+import org.wso2.carbon.identity.oauth.ciba.dao.CibaDAOFactory;
 import org.wso2.carbon.identity.oauth.ciba.dto.AuthzRequestDTO;
 import org.wso2.carbon.identity.oauth.ciba.dto.CibaAuthRequestDTO;
 import org.wso2.carbon.identity.oauth.ciba.dto.CibaAuthResponseDTO;
@@ -132,10 +132,11 @@ public class OAuth2CibaEndpoint {
 
             // Build authCode from JWT with all the parameters that need to be persisted.
             CibaAuthCodeDO cibaAuthCodeDO =
-                    CibaAuthCodeDOGenerator.getInstance().generateCibaAuthCodeDO(cibaAuthCodeasJWT.serialize());
+                    CibaAuthCodeDOGenerator.getInstance()
+                            .generateCibaAuthCodeDO(cibaAuthCodeasJWT.serialize(), cibaAuthResponseDTO);
 
             // Persist CibaAuthCode.
-            CibaAuthCodeMgtDAO.getInstance().persistCibaAuthCode(cibaAuthCodeDO);
+            CibaDAOFactory.getInstance().getCibaAuthMgtDAO().persistCibaAuthCode(cibaAuthCodeDO);
             if (log.isDebugEnabled()) {
                 log.info("Persisting CibaAuthCodeDO that accumulates parameters to be persisted in regard to the " +
                         "request made by client with clientID : " + cibaAuthRequestDTO.getAudience() + ".");
