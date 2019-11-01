@@ -28,7 +28,7 @@ import org.wso2.carbon.identity.oauth.ciba.common.CibaParams;
 import org.wso2.carbon.identity.oauth.ciba.dto.CibaAuthResponseDTO;
 import org.wso2.carbon.identity.oauth.ciba.exceptions.CibaCoreException;
 import org.wso2.carbon.identity.oauth.ciba.exceptions.ErrorCodes;
-import org.wso2.carbon.identity.oauth.ciba.model.CibaAuthResponse;
+import org.wso2.carbon.identity.oauth.ciba.model.CibaAuthResponseDO;
 import org.wso2.carbon.identity.oauth.ciba.util.AuthReqManager;
 
 import javax.servlet.http.HttpServletRequest;
@@ -98,7 +98,7 @@ public class CibaAuthResponseHandler {
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType(MediaType.APPLICATION_JSON);
 
-            CibaAuthResponse.CibaAuthResponseBuilder cibaAuthResponsebuilder = CibaAuthResponse
+            CibaAuthResponseDO.CibaAuthResponseBuilder cibaAuthResponsebuilder = CibaAuthResponseDO
                     .cibaAuthenticationResponse(HttpServletResponse.SC_OK)
                     .setAuthReqID(cibaAuthCode)
                     .setExpiresIn(Long.toString(expiresIn))

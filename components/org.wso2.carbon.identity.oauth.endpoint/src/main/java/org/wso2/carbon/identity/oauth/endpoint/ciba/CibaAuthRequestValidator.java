@@ -34,6 +34,7 @@ import org.wso2.carbon.identity.oauth.config.OAuthServerConfiguration;
 import org.wso2.carbon.identity.oauth.dao.OAuthAppDO;
 import org.wso2.carbon.identity.oauth2.IdentityOAuth2Exception;
 import org.wso2.carbon.identity.oauth2.util.OAuth2Util;
+import org.wso2.carbon.identity.oauth2.util.Oauth2ScopeUtils;
 
 import java.text.ParseException;
 import java.time.ZonedDateTime;
@@ -393,8 +394,9 @@ public class CibaAuthRequestValidator {
                     ErrorCodes.SubErrorCodes.INVALID_PARAMETERS);
         }
 
-        // Setting the scope of the cibaAuthenticationResponse
-        cibaAuthRequestDTO.setScope(String.valueOf(authRequestAsJSON.get(CibaParams.SCOPE)));
+        // Setting the scope of the cibaAuthenticationResponse.
+        cibaAuthRequestDTO.setScope(OAuth2Util.buildScopeArray(String.valueOf(authRequestAsJSON.get(CibaParams.SCOPE))));
+
 
     }
 
