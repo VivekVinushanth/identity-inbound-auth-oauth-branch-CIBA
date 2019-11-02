@@ -28,13 +28,12 @@ import org.wso2.carbon.identity.oauth.ciba.common.CibaParams;
 import org.wso2.carbon.identity.oauth.ciba.dto.CibaAuthRequestDTO;
 import org.wso2.carbon.identity.oauth.ciba.exceptions.CibaCoreException;
 import org.wso2.carbon.identity.oauth.ciba.exceptions.ErrorCodes;
-import org.wso2.carbon.identity.oauth.ciba.util.AuthReqManager;
+import org.wso2.carbon.identity.oauth.ciba.util.CibaAuthUtil;
 import org.wso2.carbon.identity.oauth.common.exception.InvalidOAuthClientException;
 import org.wso2.carbon.identity.oauth.config.OAuthServerConfiguration;
 import org.wso2.carbon.identity.oauth.dao.OAuthAppDO;
 import org.wso2.carbon.identity.oauth2.IdentityOAuth2Exception;
 import org.wso2.carbon.identity.oauth2.util.OAuth2Util;
-import org.wso2.carbon.identity.oauth2.util.Oauth2ScopeUtils;
 
 import java.text.ParseException;
 import java.time.ZonedDateTime;
@@ -875,7 +874,7 @@ public class CibaAuthRequestValidator {
             int tenantID = OAuth2Util.getTenantIdFromUserName(userHint);
 
             // Checking with realm service whether user exists.
-            return AuthReqManager.getInstance().isUserExists(tenantID, userHint);
+            return CibaAuthUtil.getInstance().isUserExists(tenantID, userHint);
 
         } catch (CibaCoreException | IdentityOAuth2Exception e) {
 

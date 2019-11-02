@@ -29,7 +29,7 @@ import org.wso2.carbon.identity.oauth.ciba.dto.CibaAuthResponseDTO;
 import org.wso2.carbon.identity.oauth.ciba.exceptions.CibaCoreException;
 import org.wso2.carbon.identity.oauth.ciba.exceptions.ErrorCodes;
 import org.wso2.carbon.identity.oauth.ciba.model.CibaAuthResponseDO;
-import org.wso2.carbon.identity.oauth.ciba.util.AuthReqManager;
+import org.wso2.carbon.identity.oauth.ciba.util.CibaAuthUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -81,7 +81,7 @@ public class CibaAuthResponseHandler {
         try {
 
             //Set the ExpiryTime.
-            long expiresIn = AuthReqManager.getInstance().getExpiresInForResponse(cibaAuthResponseDTO);
+            long expiresIn = CibaAuthUtil.getInstance().getExpiresInForResponse(cibaAuthResponseDTO);
             if (log.isDebugEnabled()) {
                 log.info("Setting ExpiryTime for the response to the  request made by client with clientID : " +
                         cibaAuthResponseDTO.getAudience() + ".");
