@@ -51,14 +51,12 @@ import javax.xml.ws.ResponseWrapper;
  */
 public class CibaAuthzHandler {
 
-
     private static final Log log = LogFactory.getLog(CibaAuthzHandler.class);
 
     OAuth2AuthzEndpoint authzEndPoint = new OAuth2AuthzEndpoint();
-    ExecutorService executor ;
+    ExecutorService executor;
 
     private CibaAuthzHandler() {
-
 
         executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
 
@@ -104,20 +102,15 @@ public class CibaAuthzHandler {
         commonAuthRequestWrapper.setParameter(CibaParams.TRANSACTION_CONTEXT,
                 authzRequestDto.getTransactionContext());
 
-
-
-
         // Create an instance of response.
 //        CommonAuthResponseWrapper commonAuthResponseWrapper = new CommonAuthResponseWrapper(response);
-        Response commonAuthResponseWrapper = new Response();
+        CommonAuthResponseWrapper commonAuthResponseWrapper = new CommonAuthResponseWrapper(response);
 
         if (log.isDebugEnabled()) {
             log.debug("Building AuthorizeRequest wrapper from CIBA component for the user : " +
                     authzRequestDto.getUser() + " to continue the authentication request made by client with " +
                     "clientID : " + authzRequestDto.getClient_id());
         }
-
-
 
         // Fire authorize request and forget.
         fireAuthzReq(commonAuthRequestWrapper, commonAuthResponseWrapper);
@@ -134,12 +127,9 @@ public class CibaAuthzHandler {
      * @throws CibaCoreException Exception from CibaCore component.
      * @authzRequestDTO url URL for authorize request.
      */
-    @Async
-    public void fireAuthzReq(CommonAuthRequestWrapper requestWrapper, Response responseWrapper) {
+    public void fireAuthzReq(CommonAuthRequestWrapper requestWrapper, CommonAuthResponseWrapper responseWrapper) {
 
         // Creating new thread executor.
-
-
 
         executor.execute(() -> {
 

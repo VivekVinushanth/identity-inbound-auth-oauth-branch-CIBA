@@ -83,6 +83,7 @@ public class OAuth2CibaEndpoint {
             // Capturing authentication request.
             String authRequest = request.getParameter(CibaParams.REQUEST);
 
+
             if (log.isDebugEnabled()) {
                 log.debug("CIBA Authentication Request with  'request' :" + authRequest + "  has hit Client " +
                         "Initiated Back-Channel Authentication EndPoint.");
