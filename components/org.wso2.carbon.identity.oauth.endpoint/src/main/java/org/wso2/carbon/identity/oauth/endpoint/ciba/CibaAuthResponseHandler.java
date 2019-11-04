@@ -74,27 +74,27 @@ public class CibaAuthResponseHandler {
      * @return Response for AuthenticationRequest.
      * @throws CibaAuthFailedException Ciba Authentication Failed Exception.
      */
-    public Response createAuthResponse(@Context HttpServletRequest request, @Context HttpServletResponse response,
+    public Response createAuthResponse(@Context HttpServletResponse response,
                                        CibaAuthResponseDTO cibaAuthResponseDTO, JWT cibaAuthCodeasJWT)
             throws CibaAuthFailedException {
 
         try {
 
-            //Set the ExpiryTime.
+            // Set the ExpiryTime.
             long expiresIn = CibaAuthUtil.getInstance().getExpiresInForResponse(cibaAuthResponseDTO);
             if (log.isDebugEnabled()) {
                 log.info("Setting ExpiryTime for the response to the  request made by client with clientID : " +
                         cibaAuthResponseDTO.getAudience() + ".");
             }
 
-            //Serialize so that can be returned in preferable manner.
+            // Serialize so that can be returned in preferable manner.
             String cibaAuthCode = cibaAuthCodeasJWT.serialize();
             if (log.isDebugEnabled()) {
                 log.info("Ciba auth_req_id " + cibaAuthCode + " is created for the response to the request made by" +
                         " client with clientID : " + cibaAuthResponseDTO.getAudience() + ".");
             }
 
-            //Create authentication response.
+            // Create authentication response.
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType(MediaType.APPLICATION_JSON);
 
@@ -118,7 +118,8 @@ public class CibaAuthResponseHandler {
                         cibaAuthResponseDTO.getAudience() + ".");
             }
 
-            // return respBuilder.entity(cibaAuthResponse.getBody()).build();
+            // Return respBuilder.entity(cibaAuthResponse.getBody()).build();
+            log.info("returning response.");
             return respBuilder.entity(cibaAuthenticationresponse.getBody()).build();
 
         } catch (OAuthSystemException e) {
@@ -144,7 +145,7 @@ public class CibaAuthResponseHandler {
      */
     public Response createErrorResponse(CibaAuthFailedException cibaAuthFailedException)
             throws OAuthSystemException {
-        //Create CIBA Authentication Error Response.
+        // Create CIBA Authentication Error Response.
 
         if (log.isDebugEnabled()) {
             log.debug("Creating Error Response for CIBA Authentication Request.");

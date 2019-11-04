@@ -22,6 +22,8 @@ import com.nimbusds.jwt.JWT;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.wso2.carbon.identity.oauth.ciba.common.CibaParams;
 import org.wso2.carbon.identity.oauth.ciba.dao.CibaDAOFactory;
 import org.wso2.carbon.identity.oauth.ciba.dto.AuthzRequestDTO;
@@ -149,14 +151,15 @@ public class OAuth2CibaEndpoint {
             }
 
             // Http authorize call to /authorize end point.
-            CibaAuthorizationHandler.getInstance().initiateAuthzRequest(authzRequestDTO);
+            // CibaAuthorizationHandler.getInstance().initiateAuthzRequest(authzRequestDTO);
+            CibaAuthzHandler.getInstance().initiateAuthzRequest(authzRequestDTO, request, response);
             if (log.isDebugEnabled()) {
                 log.info("Firing a Authorization request in regard to the request made by client with clientID : "
                         + cibaAuthResponseDTO.getAudience() + ".");
             }
 
             // Create and return Ciba Authentication Response.
-            return CibaAuthResponseHandler.getInstance().createAuthResponse(request, response, cibaAuthResponseDTO
+            return CibaAuthResponseHandler.getInstance().createAuthResponse(response, cibaAuthResponseDTO
                     , cibaAuthCodeasJWT);
 
         } catch (CibaAuthFailedException e) {
