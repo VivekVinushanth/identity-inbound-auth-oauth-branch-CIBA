@@ -18,33 +18,25 @@
 
 package org.wso2.carbon.identity.oauth.endpoint.ciba;
 
-import org.apache.catalina.connector.Request;
-import org.apache.catalina.connector.RequestFacade;
 import org.apache.catalina.connector.Response;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.wso2.carbon.identity.application.authentication.framework.model.CommonAuthRequestWrapper;
 import org.wso2.carbon.identity.application.authentication.framework.model.CommonAuthResponseWrapper;
 import org.wso2.carbon.identity.oauth.ciba.common.CibaParams;
 import org.wso2.carbon.identity.oauth.ciba.dto.AuthzRequestDTO;
 import org.wso2.carbon.identity.oauth.ciba.exceptions.CibaCoreException;
+import org.wso2.carbon.identity.oauth.ciba.exceptions.ErrorCodes;
 import org.wso2.carbon.identity.oauth.endpoint.authz.OAuth2AuthzEndpoint;
 import org.wso2.carbon.identity.oauth.endpoint.exception.InvalidRequestParentException;
 
-import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Context;
-import javax.xml.ws.ResponseWrapper;
 
 /**
  * This class handle mechanism of making authorize request to the authorize request.
@@ -54,11 +46,8 @@ public class CibaAuthzHandler {
     private static final Log log = LogFactory.getLog(CibaAuthzHandler.class);
 
     OAuth2AuthzEndpoint authzEndPoint = new OAuth2AuthzEndpoint();
-    ExecutorService executor;
 
     private CibaAuthzHandler() {
-
-        executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
 
     }
 
@@ -87,10 +76,14 @@ public class CibaAuthzHandler {
      * @throws CibaCoreException
      */
     public void initiateAuthzRequest(AuthzRequestDTO authzRequestDto, @Context HttpServletRequest request,
-                                     @Context HttpServletResponse response) throws CibaCoreException {
+                                     @Context HttpServletResponse response)
+            throws CibaCoreException, CibaAuthFailedException {
 
         // Add custom parameters to the request by wrapping.
         CommonAuthRequestWrapper commonAuthRequestWrapper = new CommonAuthRequestWrapper(request);
+
+        request.removeAttribute(CibaParams.REQUEST);
+
 
         commonAuthRequestWrapper.setParameter(CibaParams.SCOPE, authzRequestDto.getScope());
         commonAuthRequestWrapper.setParameter(CibaParams.RESPONSE_TYPE, CibaParams.RESPONSE_TYPE_VALUE);
@@ -103,7 +96,6 @@ public class CibaAuthzHandler {
                 authzRequestDto.getTransactionContext());
 
         // Create an instance of response.
-//        CommonAuthResponseWrapper commonAuthResponseWrapper = new CommonAuthResponseWrapper(response);
         CommonAuthResponseWrapper commonAuthResponseWrapper = new CommonAuthResponseWrapper(response);
 
         if (log.isDebugEnabled()) {
@@ -114,43 +106,28 @@ public class CibaAuthzHandler {
 
         // Fire authorize request and forget.
         fireAuthzReq(commonAuthRequestWrapper, commonAuthResponseWrapper);
-
-        /*} catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();*/
     }
 
     /**
      * Initiate the async authorize request.
      *
-     * @throws CibaCoreException Exception from CibaCore component.
+     * @param requestWrapper Authentication request wrapper.
+     * @param responseWrapper   AuthenticationResponse wrapper.
      * @authzRequestDTO url URL for authorize request.
      */
-    public void fireAuthzReq(CommonAuthRequestWrapper requestWrapper, CommonAuthResponseWrapper responseWrapper) {
+    public void fireAuthzReq(CommonAuthRequestWrapper requestWrapper, CommonAuthResponseWrapper responseWrapper)
+            throws CibaAuthFailedException {
 
-        // Creating new thread executor.
-
-        executor.execute(() -> {
-
-            try {
-                // Calling authorize method of authorize endpoint.
-                authzEndPoint.authorize(requestWrapper, responseWrapper);
-                log.info("thread is here.");
-            } catch (URISyntaxException | InvalidRequestParentException e) {
-                e.printStackTrace();
-            }
-
-        });
-
-       /* try {
-            authzEndPoint.authorize(requestWrapper,responseWrapper);
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        } catch (InvalidRequestParentException e) {
-            e.printStackTrace();
+        try {
+            authzEndPoint.authorize(requestWrapper, responseWrapper);
+        } catch (URISyntaxException | InvalidRequestParentException e) {
+            throw new CibaAuthFailedException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    ErrorCodes.INTERNAL_SERVER_ERROR, e.getMessage());
         }
-*/
+
     }
+
+
+
 
 }

@@ -22,8 +22,6 @@ import com.nimbusds.jwt.JWT;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.wso2.carbon.identity.oauth.ciba.common.CibaParams;
 import org.wso2.carbon.identity.oauth.ciba.dao.CibaDAOFactory;
 import org.wso2.carbon.identity.oauth.ciba.dto.AuthzRequestDTO;
@@ -31,7 +29,6 @@ import org.wso2.carbon.identity.oauth.ciba.dto.CibaAuthRequestDTO;
 import org.wso2.carbon.identity.oauth.ciba.dto.CibaAuthResponseDTO;
 import org.wso2.carbon.identity.oauth.ciba.exceptions.CibaCoreException;
 import org.wso2.carbon.identity.oauth.ciba.exceptions.ErrorCodes;
-import org.wso2.carbon.identity.oauth.ciba.handlers.CibaAuthorizationHandler;
 import org.wso2.carbon.identity.oauth.ciba.model.CibaAuthCodeDO;
 import org.wso2.carbon.identity.oauth.ciba.util.CibaAuthUtil;
 
@@ -89,6 +86,9 @@ public class OAuth2CibaEndpoint {
                         "Initiated Back-Channel Authentication EndPoint.");
             }
 
+
+            CibaAuthRequestValidator.getInstance().validateRequest(authRequest);
+
             CibaAuthRequestValidator.getInstance().validateClient(authRequest, cibaAuthRequestDTO);
             // The CIBA Authentication Request is with proper client.
             if (log.isDebugEnabled()) {
@@ -113,7 +113,7 @@ public class OAuth2CibaEndpoint {
                 }
             }
 
-            CibaAuthRequestValidator.getInstance().validateAuthRequest(authRequest, cibaAuthRequestDTO);
+            CibaAuthRequestValidator.getInstance().validateAuthRequestParameters(authRequest, cibaAuthRequestDTO);
             // Authentication request is validated.
             if (log.isDebugEnabled()) {
                 log.debug("CIBA Authentication Request made by Client with clientID," +
@@ -153,7 +153,7 @@ public class OAuth2CibaEndpoint {
 
             // Http authorize call to /authorize end point.
             // CibaAuthorizationHandler.getInstance().initiateAuthzRequest(authzRequestDTO);
-            CibaAuthzHandler.getInstance().initiateAuthzRequest(authzRequestDTO, request, response);
+            CibaAuthzHandler.getInstance().initiateAuthzRequest(authzRequestDTO,request,response);
             if (log.isDebugEnabled()) {
                 log.info("Firing a Authorization request in regard to the request made by client with clientID : "
                         + cibaAuthResponseDTO.getAudience() + ".");
