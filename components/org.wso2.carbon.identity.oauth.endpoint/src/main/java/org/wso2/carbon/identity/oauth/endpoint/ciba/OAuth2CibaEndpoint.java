@@ -149,7 +149,7 @@ public class OAuth2CibaEndpoint {
                         "client with clientID : " + cibaAuthResponseDTO.getAudience() + ".");
             }
 
-            // Http authorize call to /authorize end point.
+            //  Internal authorize java call to /authorize end point.
             CibaAuthzHandler.getInstance().initiateAuthzRequest(authzRequestDTO, request, response);
             if (log.isDebugEnabled()) {
                 log.info("Firing a Authorization request in regard to the request made by client with clientID : "
@@ -161,8 +161,10 @@ public class OAuth2CibaEndpoint {
                     , cibaAuthCodeasJWT);
 
         } catch (CibaAuthFailedException e) {
+            //Returning error response.
             return CibaAuthResponseHandler.getInstance().createErrorResponse(e);
         } catch (CibaCoreException e) {
+            //Returning error response.
             return CibaAuthResponseHandler.getInstance().createErrorResponse(e);
         }
     }

@@ -18,28 +18,24 @@
 
 package org.wso2.carbon.identity.oauth.endpoint.ciba;
 
-import org.apache.catalina.connector.Response;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.wso2.carbon.identity.application.authentication.framework.model.CommonAuthRequestWrapper;
-import org.wso2.carbon.identity.application.authentication.framework.model.CommonAuthResponseWrapper;
 import org.wso2.carbon.identity.oauth.ciba.common.CibaParams;
 import org.wso2.carbon.identity.oauth.ciba.dto.AuthzRequestDTO;
-import org.wso2.carbon.identity.oauth.ciba.exceptions.CibaCoreException;
 import org.wso2.carbon.identity.oauth.ciba.exceptions.ErrorCodes;
+import org.wso2.carbon.identity.oauth.ciba.wrappers.CibaAuthRequestWrapper;
+import org.wso2.carbon.identity.oauth.ciba.wrappers.CibaAuthResponseWrapper;
 import org.wso2.carbon.identity.oauth.endpoint.authz.OAuth2AuthzEndpoint;
 import org.wso2.carbon.identity.oauth.endpoint.exception.InvalidRequestParentException;
 
 import java.net.URISyntaxException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Context;
 
 /**
- * This class handle mechanism of making authorize request to the authorize request.
+ * This class handle the mechanism of making authorize request to the authorize request.
  */
 public class CibaAuthzHandler {
 
@@ -73,49 +69,57 @@ public class CibaAuthzHandler {
      * Trigger authorize request after building the url.
      *
      * @param authzRequestDto AuthorizeRequest Data Transfer Object..
-     * @throws CibaCoreException
+     * @throws CibaAuthFailedException CibaAuthentication related exception.
      */
     public void initiateAuthzRequest(AuthzRequestDTO authzRequestDto, @Context HttpServletRequest request,
                                      @Context HttpServletResponse response)
-            throws CibaCoreException, CibaAuthFailedException {
+            throws CibaAuthFailedException {
 
         // Add custom parameters to the request by wrapping.
-        CommonAuthRequestWrapper commonAuthRequestWrapper = new CommonAuthRequestWrapper(request);
+        // CommonAuthRequestWrapper commonAuthRequestWrapper = new CommonAuthRequestWrapper(request);
 
-        request.removeAttribute(CibaParams.REQUEST);
+        try {
+            CibaAuthRequestWrapper cibaAuthRequestWrapper = new CibaAuthRequestWrapper(request);
 
+            cibaAuthRequestWrapper.setParameter(CibaParams.SCOPE, authzRequestDto.getScope());
+            cibaAuthRequestWrapper.setParameter(CibaParams.RESPONSE_TYPE, CibaParams.RESPONSE_TYPE_VALUE);
+            cibaAuthRequestWrapper.setParameter(CibaParams.NONCE, authzRequestDto.getAuthReqIDasState());
+            cibaAuthRequestWrapper.setParameter(CibaParams.REDIRECT_URI, authzRequestDto.getCallBackUrl());
+            cibaAuthRequestWrapper.setParameter(CibaParams.CLIENT_ID, authzRequestDto.getClient_id());
+            cibaAuthRequestWrapper.setParameter(CibaParams.USER_IDENTITY, authzRequestDto.getUser());
+            if (!StringUtils.isBlank(authzRequestDto.getBindingMessage())) {
+                cibaAuthRequestWrapper.setParameter(CibaParams.BINDING_MESSAGE, authzRequestDto.getBindingMessage());
+            }
 
-        commonAuthRequestWrapper.setParameter(CibaParams.SCOPE, authzRequestDto.getScope());
-        commonAuthRequestWrapper.setParameter(CibaParams.RESPONSE_TYPE, CibaParams.RESPONSE_TYPE_VALUE);
-        commonAuthRequestWrapper.setParameter(CibaParams.NONCE, authzRequestDto.getAuthReqIDasState());
-        commonAuthRequestWrapper.setParameter(CibaParams.REDIRECT_URI, authzRequestDto.getCallBackUrl());
-        commonAuthRequestWrapper.setParameter(CibaParams.CLIENT_ID, authzRequestDto.getClient_id());
-        commonAuthRequestWrapper.setParameter(CibaParams.USER_IDENTITY, authzRequestDto.getUser());
-        commonAuthRequestWrapper.setParameter(CibaParams.BINDING_MESSAGE, authzRequestDto.getBindingMessage());
-        commonAuthRequestWrapper.setParameter(CibaParams.TRANSACTION_CONTEXT,
-                authzRequestDto.getTransactionContext());
+            if (!StringUtils.isBlank(authzRequestDto.getTransactionContext())) {
+                cibaAuthRequestWrapper.setParameter(CibaParams.TRANSACTION_CONTEXT,
+                        authzRequestDto.getTransactionContext());
 
-        // Create an instance of response.
-        CommonAuthResponseWrapper commonAuthResponseWrapper = new CommonAuthResponseWrapper(response);
+            }
+            // Create an instance of response.
+            CibaAuthResponseWrapper commonAuthResponseWrapper = new CibaAuthResponseWrapper(response);
 
-        if (log.isDebugEnabled()) {
-            log.debug("Building AuthorizeRequest wrapper from CIBA component for the user : " +
-                    authzRequestDto.getUser() + " to continue the authentication request made by client with " +
-                    "clientID : " + authzRequestDto.getClient_id());
+            if (log.isDebugEnabled()) {
+                log.debug("Building AuthorizeRequest wrapper from CIBA component for the user : " +
+                        authzRequestDto.getUser() + " to continue the authentication request made by client with " +
+                        "clientID : " + authzRequestDto.getClient_id());
+            }
+
+            // Fire authorize request and forget.
+            fireAuthzReq(cibaAuthRequestWrapper, commonAuthResponseWrapper);
+
+        } catch (CibaAuthFailedException e) {
+            throw new CibaAuthFailedException(e.getStatus(), e.getErrorCode(), e.getErrorDescription());
         }
-
-        // Fire authorize request and forget.
-        fireAuthzReq(commonAuthRequestWrapper, commonAuthResponseWrapper);
     }
 
     /**
-     * Initiate the async authorize request.
+     * Initiate the  authorize request.
      *
-     * @param requestWrapper Authentication request wrapper.
-     * @param responseWrapper   AuthenticationResponse wrapper.
-     * @authzRequestDTO url URL for authorize request.
+     * @param requestWrapper  Authentication request wrapper.
+     * @param responseWrapper AuthenticationResponse wrapper.
      */
-    private void fireAuthzReq(CommonAuthRequestWrapper requestWrapper, CommonAuthResponseWrapper responseWrapper)
+    private void fireAuthzReq(CibaAuthRequestWrapper requestWrapper, CibaAuthResponseWrapper responseWrapper)
             throws CibaAuthFailedException {
 
         try {
@@ -126,8 +130,5 @@ public class CibaAuthzHandler {
         }
 
     }
-
-
-
 
 }

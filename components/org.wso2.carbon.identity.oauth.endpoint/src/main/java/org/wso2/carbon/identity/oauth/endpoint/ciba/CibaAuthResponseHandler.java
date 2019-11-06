@@ -119,7 +119,6 @@ public class CibaAuthResponseHandler {
             }
 
             // Return respBuilder.entity(cibaAuthResponse.getBody()).build();
-            log.info("returning response.");
             return respBuilder.entity(cibaAuthenticationresponse.getBody()).build();
 
         } catch (OAuthSystemException e) {

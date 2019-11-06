@@ -817,9 +817,16 @@ public class EndpointUtil {
         }
     }
 
+    // Obtain responseTypeHandlers from server configuration.
     private static Map<String, ResponseTypeHandler> responseHandlers =
             OAuthServerConfiguration.getInstance().getSupportedResponseTypes();
 
+
+    /**
+     * This method handles the authorization request denied by user.
+     *
+     * @param oAuthMessage OAuthMessage that encapsulates request and response.
+     */
     public static void handleConsentDenial(OAuthMessage oAuthMessage) {
 
         OAuth2Parameters oAuth2Parameters = oAuthMessage.getSessionDataCacheEntry().getoAuth2Parameters();
@@ -827,6 +834,12 @@ public class EndpointUtil {
         responseTypeHandler.handleUserConsentDenial(oAuth2Parameters);
     }
 
+
+    /**
+     * This method handles the authentication Failures occured during authentication process.
+     *
+     * @param oAuthMessage OAuthMessage that encapsulates request and response.
+     */
     public static void handleAuthenticationFailed(OAuthMessage oAuthMessage) {
 
         OAuth2Parameters oAuth2Parameters = oAuthMessage.getSessionDataCacheEntry().getoAuth2Parameters();
