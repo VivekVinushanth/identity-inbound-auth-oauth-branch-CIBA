@@ -80,12 +80,10 @@ public class OAuth2CibaEndpoint {
             // Capturing authentication request.
             String authRequest = request.getParameter(CibaParams.REQUEST);
 
-
             if (log.isDebugEnabled()) {
                 log.debug("CIBA Authentication Request with  'request' :" + authRequest + "  has hit Client " +
                         "Initiated Back-Channel Authentication EndPoint.");
             }
-
 
             CibaAuthRequestValidator.getInstance().validateRequest(authRequest);
 
@@ -152,8 +150,7 @@ public class OAuth2CibaEndpoint {
             }
 
             // Http authorize call to /authorize end point.
-            // CibaAuthorizationHandler.getInstance().initiateAuthzRequest(authzRequestDTO);
-            CibaAuthzHandler.getInstance().initiateAuthzRequest(authzRequestDTO,request,response);
+            CibaAuthzHandler.getInstance().initiateAuthzRequest(authzRequestDTO, request, response);
             if (log.isDebugEnabled()) {
                 log.info("Firing a Authorization request in regard to the request made by client with clientID : "
                         + cibaAuthResponseDTO.getAudience() + ".");

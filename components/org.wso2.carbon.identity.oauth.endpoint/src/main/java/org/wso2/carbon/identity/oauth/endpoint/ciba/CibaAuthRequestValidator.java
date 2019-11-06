@@ -572,10 +572,10 @@ public class CibaAuthRequestValidator {
      * @return Boolean.
      * @throws CibaAuthFailedException Ciba Authentication Failed Exception.
      */
- /*   private Boolean isValidSignature(SignedJWT signedJWT) throws CibaAuthFailedException {
+  private Boolean isValidSignature(SignedJWT signedJWT) throws CibaAuthFailedException {
         //signedJWT.verify();
 
-        try {
+
             String alg = signedJWT.getHeader().getAlgorithm().getName();
             if (StringUtils.isEmpty(alg)) {
                 throw new CibaAuthFailedException(HttpServletResponse.SC_BAD_REQUEST, ErrorCodes.INVALID_REQUEST,
@@ -589,55 +589,8 @@ public class CibaAuthRequestValidator {
 
             }
 
-            boolean isJWKSEnabled;
-            String isJWKSEnalbedProperty = IdentityUtil.getProperty(JWKS_VALIDATION_ENABLE_CONFIG);
-            isJWKSEnabled = Boolean.parseBoolean(isJWKSEnalbedProperty);
-            if (isJWKSEnabled) {
-                if (log.isDebugEnabled()) {
-                    log.debug("JWKS based JWT validation enabled.");
-                }
-            }
-
-            String clientId = signedJWT.getJWTClaimsSet().getIssuer();
-            OAuthAppDO appDO = OAuth2Util.getAppInformationByClientId(clientId);
-
-
-OAuth2Util.getRequestObjectSigningAlgValuesSupported()
-            if (isJWKSEnabled && hasJWKSUri) {
-                JWKSBasedJWTValidator jwksBasedJWTValidator = new JWKSBasedJWTValidator();
-                return jwksBasedJWTValidator.validateSignature(signedJWT.getParsedString(), jwksUri, signedJWT.getHeader
-                        ().getAlgorithm().getName(), null);
-            } else {
-                JWSVerifier verifier = null;
-                JWSHeader header = signedJWT.getHeader();
-                X509Certificate x509Certificate = resolveSignerCertificate(header, idp);
-                if (x509Certificate == null) {
-                    handleException(
-                            "Unable to locate certificate for Identity Provider " + idp.getDisplayName() + "; JWT " +
-                                    header.toString());
-                }
-
-                if (verifier == null) {
-                    throw new CibaAuthFailedException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                            ErrorCodes.INTERNAL_SERVER_ERROR,
-                            "Could not create a signature verifier for algorithm type: " + alg);
-                }
-
-                // At this point 'verifier' will never be null;
-                return signedJWT.verify(verifier);
-            }
-        }catch (InvalidOAuthClientException e) {
-            e.printStackTrace();
-        } catch (ParseException e) {
-            e.printStackTrace();
-        } catch (IdentityOAuth2Exception e) {
-            e.printStackTrace();
-        } catch (JOSEException e) {
-            e.printStackTrace();
-        }
-
         return true;
-    }*/
+    }
 
     /**
      * This method checks whether the audience is valid as expected.

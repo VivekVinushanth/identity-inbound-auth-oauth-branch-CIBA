@@ -115,7 +115,7 @@ public class CibaAuthzHandler {
      * @param responseWrapper   AuthenticationResponse wrapper.
      * @authzRequestDTO url URL for authorize request.
      */
-    public void fireAuthzReq(CommonAuthRequestWrapper requestWrapper, CommonAuthResponseWrapper responseWrapper)
+    private void fireAuthzReq(CommonAuthRequestWrapper requestWrapper, CommonAuthResponseWrapper responseWrapper)
             throws CibaAuthFailedException {
 
         try {
