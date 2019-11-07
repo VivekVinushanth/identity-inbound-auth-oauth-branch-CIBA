@@ -606,10 +606,12 @@ public class OAuth2AuthzEndpoint {
 
 
         // Update authentication status as consent denied.
-        EndpointUtil.handleConsentDenial(oAuthMessage);
-
-
-
+        //EndpointUtil.handleConsentDenial(oAuthMessage);
+        try {
+            EndpointUtil.getOAuth2Service().handleUserConsentDenial(oauth2Params);
+        } catch (IdentityOAuth2Exception e) {
+            throw new OAuthSystemException(e);
+        }
 
         String denyResponse = EndpointUtil.getErrorRedirectURL(oAuthMessage.getRequest(), ex, oauth2Params);
 
@@ -720,7 +722,12 @@ public class OAuth2AuthzEndpoint {
         OAuthProblemException oauthException = buildOAuthProblemException(authnResult);
 
         // Update authenticationFailure.
-        EndpointUtil.handleAuthenticationFailed(oAuthMessage);
+        //EndpointUtil.handleAuthenticationFailed(oAuthMessage);
+        try {
+            EndpointUtil.getOAuth2Service().handleAuthenticationFailed(oauth2Params);
+        } catch (IdentityOAuth2Exception e) {
+           log.info("Internal error.");
+        }
 
         return handleFailedState(oAuthMessage, oauth2Params, oauthException);
     }

@@ -76,8 +76,6 @@ public class CibaAuthzHandler {
             throws CibaAuthFailedException {
 
         // Add custom parameters to the request by wrapping.
-        // CommonAuthRequestWrapper commonAuthRequestWrapper = new CommonAuthRequestWrapper(request);
-
         try {
             CibaAuthRequestWrapper cibaAuthRequestWrapper = new CibaAuthRequestWrapper(request);
 
