@@ -16,8 +16,11 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.oauth.endpoint.ciba;
+package org.wso2.carbon.identity.oauth.endpoint.exception;
 
+/**
+ * Authentication failure exception fom CIBA endpoint.
+ */
 public class CibaAuthFailedException extends Exception {
 
     private int status;

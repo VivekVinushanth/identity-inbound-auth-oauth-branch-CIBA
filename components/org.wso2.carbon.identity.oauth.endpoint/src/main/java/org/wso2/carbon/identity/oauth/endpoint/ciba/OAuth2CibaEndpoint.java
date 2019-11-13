@@ -31,6 +31,7 @@ import org.wso2.carbon.identity.oauth.ciba.exceptions.CibaCoreException;
 import org.wso2.carbon.identity.oauth.ciba.exceptions.ErrorCodes;
 import org.wso2.carbon.identity.oauth.ciba.model.CibaAuthCodeDO;
 import org.wso2.carbon.identity.oauth.ciba.util.CibaAuthUtil;
+import org.wso2.carbon.identity.oauth.endpoint.exception.CibaAuthFailedException;
 
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
@@ -120,10 +121,10 @@ public class OAuth2CibaEndpoint {
 
             // Building Authentication response DTO from RequestDTO.
             CibaAuthResponseDTO cibaAuthResponseDTO =
-                    CibaAuthUtil.getInstance().buildCibaAuthResponseDTO(cibaAuthRequestDTO);
+                    CibaAuthUtil.buildCibaAuthResponseDTO(cibaAuthRequestDTO);
 
             // Create JWT as CibaAuthCode.
-            JWT cibaAuthCodeasJWT = CibaAuthUtil.getInstance().getCibaAuthReqIDasSignedJWT(cibaAuthResponseDTO);
+            JWT cibaAuthCodeasJWT = CibaAuthUtil.getCibaAuthReqIDasSignedJWT(cibaAuthResponseDTO);
             if (log.isDebugEnabled()) {
                 log.info("Creating CibaAuthCode as a JWT for the request made by client with clientID : " +
                         cibaAuthRequestDTO.getAudience() + ".");
@@ -131,8 +132,7 @@ public class OAuth2CibaEndpoint {
 
             // Build authCode from JWT with all the parameters that need to be persisted.
             CibaAuthCodeDO cibaAuthCodeDO =
-                    CibaAuthUtil.getInstance()
-                            .generateCibaAuthCodeDO(cibaAuthCodeasJWT.serialize(), cibaAuthResponseDTO);
+                    CibaAuthUtil.generateCibaAuthCodeDO(cibaAuthCodeasJWT.serialize(), cibaAuthResponseDTO);
 
             // Persist CibaAuthCode.
             CibaDAOFactory.getInstance().getCibaAuthMgtDAO().persistCibaAuthCode(cibaAuthCodeDO);
@@ -142,8 +142,7 @@ public class OAuth2CibaEndpoint {
             }
 
             // Build authorize request data transfer object.
-            AuthzRequestDTO authzRequestDTO = CibaAuthUtil.getInstance().
-                    buildAuthzRequestDO(cibaAuthResponseDTO, cibaAuthCodeDO);
+            AuthzRequestDTO authzRequestDTO = CibaAuthUtil.buildAuthzRequestDO(cibaAuthResponseDTO, cibaAuthCodeDO);
             if (log.isDebugEnabled()) {
                 log.info("Build CibaAuthzRequestDTO using  CibaAuthCodeDo in regard to the request made by " +
                         "client with clientID : " + cibaAuthResponseDTO.getAudience() + ".");
@@ -169,3 +168,4 @@ public class OAuth2CibaEndpoint {
         }
     }
 }
+

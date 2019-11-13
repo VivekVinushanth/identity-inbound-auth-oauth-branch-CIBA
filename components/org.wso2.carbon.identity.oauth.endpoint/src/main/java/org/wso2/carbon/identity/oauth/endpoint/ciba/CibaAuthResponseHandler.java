@@ -30,8 +30,8 @@ import org.wso2.carbon.identity.oauth.ciba.exceptions.CibaCoreException;
 import org.wso2.carbon.identity.oauth.ciba.exceptions.ErrorCodes;
 import org.wso2.carbon.identity.oauth.ciba.model.CibaAuthResponseDO;
 import org.wso2.carbon.identity.oauth.ciba.util.CibaAuthUtil;
+import org.wso2.carbon.identity.oauth.endpoint.exception.CibaAuthFailedException;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -68,7 +68,7 @@ public class CibaAuthResponseHandler {
     }
 
     /**
-     * This method create CIBA AuthenticationResponse.
+     * Creates CIBA AuthenticationResponse.
      *
      * @param cibaAuthResponseDTO CIBA Authentication Request Data Transfer Object.
      * @return Response for AuthenticationRequest.
@@ -81,7 +81,7 @@ public class CibaAuthResponseHandler {
         try {
 
             // Set the ExpiryTime.
-            long expiresIn = CibaAuthUtil.getInstance().getExpiresInForResponse(cibaAuthResponseDTO);
+            long expiresIn = CibaAuthUtil.getExpiresInForResponse(cibaAuthResponseDTO);
             if (log.isDebugEnabled()) {
                 log.info("Setting ExpiryTime for the response to the  request made by client with clientID : " +
                         cibaAuthResponseDTO.getAudience() + ".");
@@ -102,7 +102,7 @@ public class CibaAuthResponseHandler {
                     .cibaAuthenticationResponse(HttpServletResponse.SC_OK)
                     .setAuthReqID(cibaAuthCode)
                     .setExpiresIn(Long.toString(expiresIn))
-                    .setInterval(Long.toString(CibaParams.interval));
+                    .setInterval(Long.toString(CibaParams.INTERVAL_DEFAULT_VALUE));
 
             if (log.isDebugEnabled()) {
                 log.info("Creating CIBA Authentication response to the request made by client with clientID : " +
@@ -136,7 +136,7 @@ public class CibaAuthResponseHandler {
     }
 
     /**
-     * This method create CIBA Authentication Error Response.
+     * Creates CIBA Authentication Error Response.
      *
      * @param cibaAuthFailedException Ciba Authentication Failed Exception.
      * @return response Authentication Error Responses for AuthenticationRequest.
@@ -161,7 +161,7 @@ public class CibaAuthResponseHandler {
     }
 
     /**
-     * This method create CIBA Authentication Error Response.
+     * Creates CIBA Authentication Error Response.
      *
      * @param cibaCoreException Ciba Component Core Exception.
      * @return response Authentication Error Responses for AuthenticationRequest.
@@ -178,7 +178,7 @@ public class CibaAuthResponseHandler {
         OAuthResponse errorresponse = OAuthASResponse
                 .errorResponse(cibaCoreException.getStatus())
                 .setError(cibaCoreException.getErrorCode())
-                .setErrorDescription(cibaCoreException.getErrorDescritption())
+                .setErrorDescription(cibaCoreException.getErrorDescription())
                 .buildJSONMessage();
 
         Response.ResponseBuilder respBuilder = Response.status(cibaCoreException.getStatus());

@@ -27,6 +27,7 @@ import org.wso2.carbon.identity.oauth.ciba.exceptions.ErrorCodes;
 import org.wso2.carbon.identity.oauth.ciba.wrappers.CibaAuthRequestWrapper;
 import org.wso2.carbon.identity.oauth.ciba.wrappers.CibaAuthResponseWrapper;
 import org.wso2.carbon.identity.oauth.endpoint.authz.OAuth2AuthzEndpoint;
+import org.wso2.carbon.identity.oauth.endpoint.exception.CibaAuthFailedException;
 import org.wso2.carbon.identity.oauth.endpoint.exception.InvalidRequestParentException;
 
 import java.net.URISyntaxException;
@@ -35,7 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Context;
 
 /**
- * This class handle the mechanism of making authorize request to the authorize request.
+ * Handles making authorize request to the authorize request.
  */
 public class CibaAuthzHandler {
 
@@ -126,7 +127,6 @@ public class CibaAuthzHandler {
             throw new CibaAuthFailedException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     ErrorCodes.INTERNAL_SERVER_ERROR, e.getMessage());
         }
-
     }
-
 }
+

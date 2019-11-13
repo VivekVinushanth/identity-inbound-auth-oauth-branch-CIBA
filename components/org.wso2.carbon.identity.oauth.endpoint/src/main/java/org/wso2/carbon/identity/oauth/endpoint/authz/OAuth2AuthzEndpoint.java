@@ -717,7 +717,8 @@ public class OAuth2AuthzEndpoint {
     }
 
     private Response handleFailedAuthentication(OAuthMessage oAuthMessage, OAuth2Parameters oauth2Params,
-                                                AuthenticationResult authnResult) throws URISyntaxException {
+                                                AuthenticationResult authnResult)
+            throws URISyntaxException, OAuthSystemException {
 
         OAuthProblemException oauthException = buildOAuthProblemException(authnResult);
 
@@ -726,7 +727,7 @@ public class OAuth2AuthzEndpoint {
         try {
             EndpointUtil.getOAuth2Service().handleAuthenticationFailed(oauth2Params);
         } catch (IdentityOAuth2Exception e) {
-           log.info("Internal error.");
+           throw new OAuthSystemException(e);
         }
 
         return handleFailedState(oAuthMessage, oauth2Params, oauthException);
